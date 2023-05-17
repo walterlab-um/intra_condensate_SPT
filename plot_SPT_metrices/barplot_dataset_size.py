@@ -9,18 +9,19 @@ sns.set(color_codes=True, style="white")
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-color_palette = [
-    "#ffcb05",
-    "#b79915",
-    "#c8be56",
-    "#546a4e",
-    "#3b6f7d",
-    "#00274c",
-    "#656ba4",
-    "#4d2d38",
-    "#c5706d",
-    "#9a3324",
-]
+# color_palette = [
+#     "#ffcb05",
+#     "#b79915",
+#     "#c8be56",
+#     "#546a4e",
+#     "#3b6f7d",
+#     "#00274c",
+#     "#656ba4",
+#     "#4d2d38",
+#     "#c5706d",
+#     "#9a3324",
+# ]
+color_palette = ["#ffcb05", "#00274c", "#9a3324"]
 os.chdir("/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/")
 path_save = "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures"
 dict_input_path = {
@@ -37,68 +38,43 @@ dict_input_path = {
 }
 
 lst_total_size = []
-lst_N_linear = []
-lst_N_loglog = []
+lst_linear = []
+lst_loglog = []
 for key in dict_input_path.keys():
-    df_current = pd.read_csv(dict_input_path[key], dtype=float)
+    df_current = pd.read_csv(dict_input_path[key])
+    df_current = df_current.astype({"slope_linear": float, "alpha": float})
     lst_total_size.append(df_current.shape[0])
-    lst_N_linear.append(df_current[df_current["slope_linear"] > 0].shape[0])
-    lst_N_loglog.append(df_current[df_current["alpha"] > 0].shape[0])
+    lst_linear.append(df_current[df_current["slope_linear"] > 0].shape[0])
+    lst_loglog.append(df_current[df_current["alpha"] > 0].shape[0])
 
 df_plot = pd.DataFrame(
     {
         "label": dict_input_path.keys(),
-        "N_total": lst_total_size,
-        "N_linear": lst_N_linear,
-        "N_loglog": lst_N_loglog,
+        "Total Size": lst_total_size,
+        "Linear Fit": lst_linear,
+        "Log-Log Fit": lst_loglog,
     },
     dtype=object,
 )
+df_plot = df_plot.melt(
+    id_vars=["label"], value_vars=["Total Size", "Linear Fit", "Log-Log Fit"]
+)
+df_plot = df_plot.rename(columns={"variable": "Type"})
+# df_plot.to_csv(join(path_save, "test.csv"), index=False)
 
-plt.figure(figsize=(7, 5), dpi=200)
+plt.figure(figsize=(8, 5), dpi=300)
 ax = sns.barplot(
     data=df_plot,
     x="label",
-    y="N_total",
+    y="value",
+    hue="Type",
     width=0.9,
     palette=color_palette,
 )
 plt.title("Dataset Size", weight="bold")
-plt.ylabel("Total # of trajectories", weight="bold")
+plt.ylabel("Number of trajectories", weight="bold")
 ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
 plt.xlabel("")
 plt.tight_layout()
-plt.savefig(join(path_save, "barplot_dataset_size_total.png"), format="png")
-plt.close()
-
-plt.figure(figsize=(7, 5), dpi=200)
-ax = sns.barplot(
-    data=df_plot,
-    x="label",
-    y="N_linear",
-    width=0.9,
-    palette=color_palette,
-)
-plt.title("Dataset Size", weight="bold")
-plt.ylabel("Total # of trajectories in linear fitting", weight="bold")
-ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
-plt.xlabel("")
-plt.tight_layout()
-plt.savefig(join(path_save, "barplot_dataset_size_linear.png"), format="png")
-plt.close()
-
-plt.figure(figsize=(7, 5), dpi=200)
-ax = sns.barplot(
-    data=df_plot,
-    x="label",
-    y="N_loglog",
-    width=0.9,
-    palette=color_palette,
-)
-plt.title("Dataset Size", weight="bold")
-plt.ylabel("Total # of trajectories in log-log fitting", weight="bold")
-ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
-plt.xlabel("")
-plt.tight_layout()
-plt.savefig(join(path_save, "barplot_dataset_size_loglog.png"), format="png")
+plt.savefig(join(path_save, "barplot_dataset_size_3in1.png"), format="png")
 plt.close()
