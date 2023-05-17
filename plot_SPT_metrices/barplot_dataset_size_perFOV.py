@@ -36,33 +36,58 @@ link_max = 3
 log10D_low = np.log10(static_err**2 / (4 * (s_per_frame)))
 log10D_high = np.log10((um_per_pxl * link_max) ** 2 / (4 * (s_per_frame)))
 
-lst_total_size = []
-lst_nonstatic = []
-lst_normal_difuse = []
+lst_tag = []
+lst_FOVname = []
+lst_N_total = []
+lst_N_mobile = []
+lst_N_normal_difuse = []
+lst_fraction_static = []
+lst_fraction_constrained = []
 for key in dict_input_path.keys():
     df_current = pd.read_csv(dict_input_path[key])
     df_current = df_current.astype({"log10D_linear": float, "alpha": float})
-    lst_total_size.append(df_current.shape[0])
-    df_nonstatic = df_current[df_current["log10D_linear"] > log10D_low]
-    lst_nonstatic.append(df_nonstatic.shape[0])
-    df_normal = df_nonstatic[df_nonstatic["alpha"] > 0.5]
-    lst_normal_difuse.append(df_normal.shape[0])
 
-df_plot = pd.DataFrame(
+    for FOVname in df_current.filename.unique():
+        df_currentFOV = df_current[df_current.filename == FOVname]
+        df_mobile = df_currentFOV[df_currentFOV["log10D_linear"] > log10D_low]
+        df_normal_difuse = df_mobile[df_mobile["alpha"] > 0.5]
+
+        N_total = df_currentFOV.shape[0]
+        N_mobile = df_mobile.shape[0]
+        N_normal_difuse = df_normal_difuse.shape[0]
+
+        fraction_static = (N_total - N_mobile) / N_total
+        fraction_constrained = (N_mobile - N_normal_difuse) / N_mobile
+
+        lst_tag.append(key)
+        lst_FOVname.append(FOVname)
+        lst_N_total.append(N_total)
+        lst_N_mobile.append(N_mobile)
+        lst_N_normal_difuse.append(N_normal_difuse)
+        lst_fraction_static.append(fraction_static)
+        lst_fraction_constrained.append(fraction_constrained)
+
+
+df_save = pd.DataFrame(
     {
-        "label": dict_input_path.keys(),
-        "Total": lst_total_size,
-        "Non-Static": lst_nonstatic,
-        "Normal Diffusion": lst_normal_difuse,
+        "label": lst_tag,
+        "FOVname": lst_FOVname,
+        "N, Total": lst_N_total,
+        "N, Mobile": lst_N_mobile,
+        "N, Normal Difusion": lst_N_normal_difuse,
+        "Static Fraction": lst_fraction_static,
+        "Constrained Fraction": lst_fraction_constrained,
     },
     dtype=object,
 )
-df_plot = df_plot.melt(
+df_save.to_csv("N_and_Fraction_per_FOV.csv", index=False)
+
+df_plot = df_save.melt(
     id_vars=["label"],
-    value_vars=["Total", "Non-Static", "Normal Diffusion"],
+    value_vars=["N, Total", "N, Mobile", "N, Normal Difusion"],
 )
 df_plot = df_plot.rename(columns={"variable": "Type"})
-df_plot.to_csv("barplot_N_traj_per_dataset.csv", index=False)
+df_plot.to_csv("barplot_N_traj_per_FOV.csv", index=False)
 
 plt.figure(figsize=(8, 5), dpi=300)
 ax = sns.barplot(
@@ -70,14 +95,13 @@ ax = sns.barplot(
     x="label",
     y="value",
     hue="Type",
-    width=0.9,
     palette=color_palette,
 )
-plt.axhline(5000, ls="--", color="gray", alpha=0.7, lw=3)
-plt.title("Dataset Size", weight="bold")
+# plt.axhline(500, ls="--", color="gray", alpha=0.7, lw=3)
+plt.title("N per FOV", weight="bold")
 plt.ylabel("Number of Trajectories", weight="bold")
 ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
 plt.xlabel("")
 plt.tight_layout()
-plt.savefig("barplot_N_per_dataset.png", format="png")
+plt.savefig("barplot_N_per_FOV.png", format="png")
 plt.close()
