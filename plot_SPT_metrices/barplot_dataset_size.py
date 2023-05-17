@@ -9,32 +9,22 @@ sns.set(color_codes=True, style="white")
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-# color_palette = [
-#     "#ffcb05",
-#     "#b79915",
-#     "#c8be56",
-#     "#546a4e",
-#     "#3b6f7d",
-#     "#00274c",
-#     "#656ba4",
-#     "#4d2d38",
-#     "#c5706d",
-#     "#9a3324",
-# ]
 color_palette = ["#ffcb05", "#00274c", "#9a3324"]
-os.chdir("/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/")
-path_save = "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures"
+os.chdir(
+    "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures/May2023_wrapup"
+)
+
 dict_input_path = {
-    "0Dex, -, 0h": "bioFUStether-10FUS-1Mg-noDex-RT/No Total RNA/20221031_0hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
-    "0Dex, -, 3h": "bioFUStether-10FUS-1Mg-noDex-RT/No Total RNA/20221031_3hrs/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
-    "0Dex, He, 1h": "bioFUStether-10FUS-1Mg-noDex-RT/Total RNA Background/HeLa Total RNA/20221031_1hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
-    "0Dex, Ce, 1h": "bioFUStether-10FUS-1Mg-noDex-RT/Total RNA Background/Cerebral Total RNA/20221114_1hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
-    "0Dex, Sp, 1h": "bioFUStether-10FUS-1Mg-noDex-RT/Total RNA Background/Spinal Total RNA/20221031_1hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
-    "10Dex, -, 0h": "bioFUStether-10FUS-1Mg-10Dex-RT/NoTotalRNA/FL-0hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
-    "10Dex, -, 3h": "bioFUStether-10FUS-1Mg-10Dex-RT/NoTotalRNA/FL-3hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
-    "10Dex, He, 1h": "bioFUStether-10FUS-1Mg-10Dex-RT/Total RNA Background/HelaTotalRNA/FL-0hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
-    "10Dex, Ce, 1h": "bioFUStether-10FUS-1Mg-10Dex-RT/Total RNA Background/Cerebral TotalRNA/FL-0hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
-    "10Dex, Sp, 1h": "bioFUStether-10FUS-1Mg-10Dex-RT/Total RNA Background/SpinalTotalRNA/FL-0hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
+    "0Dex, -, 0h": "EffectiveD-alpha-alltracks_0Dex_noTotR_0h.csv",
+    "0Dex, -, 3h": "EffectiveD-alpha-alltracks_0Dex_noTotR_3h.csv",
+    "0Dex, He, 1h": "EffectiveD-alpha-alltracks_0Dex_Hela_1h.csv",
+    "0Dex, Ce, 1h": "EffectiveD-alpha-alltracks_0Dex_Cerebral_1h.csv",
+    "0Dex, Sp, 1h": "EffectiveD-alpha-alltracks_0Dex_Spinal_1h.csv",
+    "10Dex, -, 0h": "EffectiveD-alpha-alltracks_10Dex_noTotR_0h.csv",
+    "10Dex, -, 3h": "EffectiveD-alpha-alltracks_10Dex_noTotR_3h.csv",
+    "10Dex, He, 1h": "EffectiveD-alpha-alltracks_10Dex_Hela_1h.csv",
+    "10Dex, Ce, 1h": "EffectiveD-alpha-alltracks_10Dex_Cerebral_1h.csv",
+    "10Dex, Sp, 1h": "EffectiveD-alpha-alltracks_10Dex_Spinal_1h.csv",
 }
 
 # calculate error bounds
@@ -72,7 +62,6 @@ df_plot = df_plot.melt(
     value_vars=["Total", "Non-Static", "Normal Diffusion"],
 )
 df_plot = df_plot.rename(columns={"variable": "Type"})
-# df_plot.to_csv(join(path_save, "test.csv"), index=False)
 
 plt.figure(figsize=(8, 5), dpi=300)
 ax = sns.barplot(
@@ -89,5 +78,5 @@ plt.ylabel("Number of Trajectories", weight="bold")
 ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
 plt.xlabel("")
 plt.tight_layout()
-plt.savefig(join(path_save, "barplot_dataset_size_3in1.png"), format="png")
+plt.savefig("barplot_dataset_size_3in1.png", format="png")
 plt.close()
