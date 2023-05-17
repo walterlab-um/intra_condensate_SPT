@@ -37,27 +37,39 @@ dict_input_path = {
     "10Dex, Sp, 1h": "bioFUStether-10FUS-1Mg-10Dex-RT/Total RNA Background/SpinalTotalRNA/FL-0hr/MSDtau-D-alpha/EffectiveD-alpha-alltracks.csv",
 }
 
+# calculate error bounds
+um_per_pixel = 0.117
+s_per_frame = 0.02
+static_err = 0.016
+um_per_pxl = 0.117
+link_max = 3
+log10D_low = np.log10(static_err**2 / (4 * (s_per_frame)))
+log10D_high = np.log10((um_per_pxl * link_max) ** 2 / (4 * (s_per_frame)))
+
 lst_total_size = []
-lst_linear = []
-lst_loglog = []
+lst_nonstatic = []
+lst_normal_difuse = []
 for key in dict_input_path.keys():
     df_current = pd.read_csv(dict_input_path[key])
-    df_current = df_current.astype({"slope_linear": float, "alpha": float})
+    df_current = df_current.astype({"log10D_linear": float, "alpha": float})
     lst_total_size.append(df_current.shape[0])
-    lst_linear.append(df_current[df_current["slope_linear"] > 0].shape[0])
-    lst_loglog.append(df_current[df_current["alpha"] > 0].shape[0])
+    df_nonstatic = df_current[df_current["log10D_linear"] > log10D_low]
+    lst_nonstatic.append(df_nonstatic.shape[0])
+    df_normal = df_nonstatic[df_nonstatic["alpha"] > 0.5]
+    lst_normal_difuse.append(df_normal.shape[0])
 
 df_plot = pd.DataFrame(
     {
         "label": dict_input_path.keys(),
-        "Total Size": lst_total_size,
-        "Linear Fit": lst_linear,
-        "Log-Log Fit": lst_loglog,
+        "Total": lst_total_size,
+        "Non-Static": lst_nonstatic,
+        "Normal Diffusion": lst_normal_difuse,
     },
     dtype=object,
 )
 df_plot = df_plot.melt(
-    id_vars=["label"], value_vars=["Total Size", "Linear Fit", "Log-Log Fit"]
+    id_vars=["label"],
+    value_vars=["Total", "Non-Static", "Normal Diffusion"],
 )
 df_plot = df_plot.rename(columns={"variable": "Type"})
 # df_plot.to_csv(join(path_save, "test.csv"), index=False)
@@ -71,8 +83,9 @@ ax = sns.barplot(
     width=0.9,
     palette=color_palette,
 )
+plt.axhline(5000, ls="--", color="gray", alpha=0.7, lw=3)
 plt.title("Dataset Size", weight="bold")
-plt.ylabel("Number of trajectories", weight="bold")
+plt.ylabel("Number of Trajectories", weight="bold")
 ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
 plt.xlabel("")
 plt.tight_layout()
