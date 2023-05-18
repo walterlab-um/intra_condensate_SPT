@@ -32,8 +32,6 @@ df_plot = df_save.melt(
 box_pairs = [
     ("0Dex, -, 0h", "0Dex, -, 3h"),
     ("10Dex, -, 0h", "10Dex, -, 3h"),
-    ("0Dex, -, 3h", "0Dex, He, 1h"),
-    ("10Dex, -, 3h", "10Dex, He, 1h"),
     ("0Dex, -, 0h", "0Dex, He, 1h"),
     ("10Dex, -, 0h", "10Dex, He, 1h"),
     ("0Dex, He, 1h", "0Dex, Ce, 1h"),
