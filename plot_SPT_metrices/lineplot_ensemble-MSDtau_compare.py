@@ -27,26 +27,26 @@ dict_input_fname = {
 
 plt.figure(figsize=(5, 4), dpi=300)
 # curve 1
-key = "0Dex, He, 1h"
+key = "0Dex, -, 0h"
 color_idx = 0
 df_MSDtau = pd.read_csv(dict_input_fname[key], dtype=float)
 sns.lineplot(
     data=df_MSDtau, x="tau_s", y="MSD_um2", color=color_palette[color_idx], label=key
 )
 # curve 2
-key = "0Dex, Ce, 1h"
+key = "10Dex, -, 0h"
 color_idx = 1
 df_MSDtau = pd.read_csv(dict_input_fname[key], dtype=float)
 sns.lineplot(
     data=df_MSDtau, x="tau_s", y="MSD_um2", color=color_palette[color_idx], label=key
 )
 # curve 3
-key = "0Dex, Sp, 1h"
-color_idx = 2
-df_MSDtau = pd.read_csv(dict_input_fname[key], dtype=float)
-sns.lineplot(
-    data=df_MSDtau, x="tau_s", y="MSD_um2", color=color_palette[color_idx], label=key
-)
+# key = "10Dex, Sp, 1h"
+# color_idx = 2
+# df_MSDtau = pd.read_csv(dict_input_fname[key], dtype=float)
+# sns.lineplot(
+#     data=df_MSDtau, x="tau_s", y="MSD_um2", color=color_palette[color_idx], label=key
+# )
 # other plot parameters
 plt.ylim(0, 2000)
 plt.xlim(0, 4)
@@ -54,5 +54,5 @@ plt.xlabel(r"$\tau$, s", weight="bold")
 plt.ylabel(r"Ensemble MSD, $\mu$m$^2$", weight="bold")
 plt.legend(ncol=1, fontsize=11, loc=2)
 plt.tight_layout()
-plt.savefig("Ensemble_MSDtau_compare_0Dex3totR.png", format="png")
+plt.savefig("Ensemble_MSDtau_compare_noVs10Dex.png", format="png")
 plt.close()
