@@ -65,10 +65,7 @@ def calc_MSD_NonPhysUnit(df_track, lags):
     return MSDs
 
 
-# Output file 1: MSD, tau for tau in (1, tracklength-2) in each trajector
-MeanSquareDisplacement = []
-tau = []
-# Output file 2: Apparent D from linear fit, Apparent D + anomalous exponent α from log-log fit
+# Output file: Apparent D from linear fit, Apparent D + anomalous exponent α from log-log fit
 lst_fname = []
 lst_trackID = []
 lst_meanx = []  # pixel
@@ -92,16 +89,10 @@ for f in track(lst_files):
         df_track = df_in[df_in.trackID == id]
         tracklength = df_track.shape[0]
 
-        # For output file 1
-
         lags = np.arange(1, tracklength - 2)
         lags_phys = lags * s_per_frame
         MSDs = calc_MSD_NonPhysUnit(df_track, lags)
         MSDs_phys = MSDs * (um_per_pixel**2)  # um^2
-        MeanSquareDisplacement.extend(MSDs_phys)
-        tau.extend(lags)
-
-        # For output file 2
 
         # D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
         # diffusion dimension = 2. Note: This is the dimension of the measured data, not the actual movements! Although particles are doing 3D diffussion, the microscopy data is a projection on 2D plane and thus should be treated as 2D diffusion!
@@ -153,10 +144,6 @@ for f in track(lst_files):
         lst_R2_loglog.append(R_loglog**2)
         lst_log10D_loglog.append(log10D_loglog)
         lst_alpha.append(alpha)
-
-data = pd.DataFrame({"MSD_um2": MeanSquareDisplacement, "tau": tau}, dtype=float)
-fpath_save = join(dirname(lst_files[0]), "MSD-tau-alltracks.csv")
-data.to_csv(fpath_save, index=False)
 
 df_out = pd.DataFrame(
     {
