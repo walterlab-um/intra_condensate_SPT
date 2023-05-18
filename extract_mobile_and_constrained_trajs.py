@@ -23,16 +23,8 @@ df_constrained = df_mobile[df_mobile["alpha"] <= 0.5]
 
 lst_fname_all = df_mobile["filename"].to_list()
 # construct two new dataframe columns
-# lst_mobile_fname = []
-# lst_mobile_trackID = []
-lst_mobile_t = []
-lst_mobile_x = []
-lst_mobile_y = []
-# lst_constrained_fname = []
-# lst_constrained_trackID = []
-lst_constrained_t = []
-lst_constrained_x = []
-lst_constrained_y = []
+lst_df_segments_mobile = []
+lst_df_segments_constrained = []
 
 for fname in track(lst_fname_all):
     df_current_file = pd.read_csv(fname)
@@ -43,6 +35,7 @@ for fname in track(lst_fname_all):
     df_current_file_mobile = df_current_file[
         df_current_file["trackID"].isin(set_trackID_mobile)
     ]
+
     # extract constrained tracks from current file
     set_trackID_constrained = set(
         df_constrained[df_constrained["filename"] == fname]["trackID"].unique()
@@ -50,40 +43,17 @@ for fname in track(lst_fname_all):
     df_current_file_constrained = df_current_file[
         df_current_file["trackID"].isin(set_trackID_constrained)
     ]
+
     # save
-    # lst_mobile_fname.extend(np.repeat(fname, df_current_file_mobile.shape[0]).tolist())
-    # lst_mobile_trackID.extend(df_current_file_mobile["trackID"].to_list())
-    lst_mobile_t.extend(df_current_file_mobile["t"].to_list())
-    lst_mobile_x.extend(df_current_file_mobile["x"].to_list())
-    lst_mobile_y.extend(df_current_file_mobile["y"].to_list())
-    # lst_constrained_fname.extend(
-    #     np.repeat(fname, df_current_file_constrained.shape[0]).tolist()
-    # )
-    # lst_constrained_trackID.extend(df_current_file_constrained["trackID"].to_list())
-    lst_constrained_t.extend(df_current_file_constrained["t"].to_list())
-    lst_constrained_x.extend(df_current_file_constrained["x"].to_list())
-    lst_constrained_y.extend(df_current_file_constrained["y"].to_list())
+    lst_df_segments_mobile.append(df_current_file_mobile[["t", "x", "y"]])
+    lst_df_segments_constrained.append(df_current_file_constrained[["t", "x", "y"]])
 
 # construct and save the two dataframe
-df_out_mobile = pd.DataFrame(
-    {
-        "t": lst_mobile_t,
-        "x": lst_mobile_x,
-        "y": lst_mobile_y,
-    },
-    dtype=object,
-)
+df_out_mobile = pd.concat(lst_df_segments_mobile, ignore_index=True)
 fname_save = "Mobile_tracks-" + basename(path_D_alpha_alltracks).split("alltracks_")[-1]
 df_out_mobile.to_csv(join(folder_save, fname_save), index=False)
 
-df_out_constrained = pd.DataFrame(
-    {
-        "t": lst_constrained_t,
-        "x": lst_constrained_x,
-        "y": lst_constrained_y,
-    },
-    dtype=object,
-)
+df_out_constrained = pd.concat(lst_df_segments_constrained, ignore_index=True)
 fname_save = (
     "Constrained_tracks-" + basename(path_D_alpha_alltracks).split("alltracks_")[-1]
 )
