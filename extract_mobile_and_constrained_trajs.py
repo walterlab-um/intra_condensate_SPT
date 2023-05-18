@@ -21,11 +21,12 @@ df_mobile = df_ref[df_ref["log10D_linear"] > log10D_low]
 df_constrained = df_mobile[df_mobile["alpha"] <= 0.5]
 
 
-lst_fname_all = df_mobile["filename"].to_list()
+lst_fname_all = df_mobile["filename"].unique().tolist()
 # construct two new dataframe columns
 lst_df_segments_mobile = []
 lst_df_segments_constrained = []
 
+print("Total number of files:", str(len(lst_fname_all)))
 for fname in track(lst_fname_all):
     df_current_file = pd.read_csv(fname)
     # extract mobile tracks from current file
