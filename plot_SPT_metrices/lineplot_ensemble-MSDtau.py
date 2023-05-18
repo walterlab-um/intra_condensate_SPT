@@ -77,33 +77,38 @@ for fname in track(lst_fname):
     lst_MSD = []
     lst_tau = []
 
+    plt.figure(figsize=(5, 4), dpi=300)
+
     trackids = data.trackID.unique()
     for id in trackids:
         df_track = data[data.trackID == id]
         tracklength = df_track.shape[0]
         lags = np.arange(1, tracklength - 2)
-        lags_phys = lags * s_per_frame
+        lags_phys = lags * s_per_frame  # s
         MSDs = calc_MSD_NonPhysUnit(df_track, lags)
         MSDs_phys = MSDs * (um_per_pixel**2)  # um^2
         lst_MSD.extend(MSDs_phys)
         lst_tau.extend(lags)
 
+        # plot individual at the same time
+        # plt.plot(lags_phys, MSDs_phys, "-", color="gray", alpha=0.1)
+
     # construct a dataframe
     df_MSDtau = pd.DataFrame(
         {
             "MSD_um2": lst_MSD,
-            "tau_ms": np.array(lst_tau) * s_per_frame * 1e3,
+            "tau_ms": np.array(lst_tau) * s_per_frame,
         },
         dtype=float,
     )
-    # plot
-    plt.figure(figsize=(5, 4), dpi=300)
+    # plot ensemble
     sns.lineplot(data=df_MSDtau, x="tau_ms", y="MSD_um2")
     plt.ylim(0, 2000)
-    plt.title(r"Average MSD-$\tau$ Plot", weight="bold")
-    plt.xlabel("tau, ms", weight="bold")
+    title = ", ".join(fname.split("tracks-")[-1][:-4].split("_"))
+    plt.title(title, weight="bold")
+    plt.xlabel(r"$\tau$, s", weight="bold")
     plt.ylabel(r"Ensemble MSD, $\mu$m$^2$", weight="bold")
     plt.tight_layout()
-    fname_save = fname[:-4] + "-EnsembleMSDtau.png"
+    fname_save = fname.split("tracks-")[-1][:-4] + "-EnsembleMSDtau.png"
     plt.savefig(fname_save, format="png")
     plt.close()
