@@ -3,9 +3,12 @@ from os.path import dirname, basename, join
 import pandas as pd
 import numpy as np
 from rich.progress import track
+from tkinter import filedialog as fd
 
-folder_source = "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/bioFUStether-10FUS-1Mg-noDex-RT/No Total RNA/20221031_0hr/tracks-reformatted"
-path_D_alpha_alltracks = "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures/May2023_wrapup/EffectiveD-alpha-alltracks_0Dex_noTotR_0h.csv"
+path_D_alpha_alltracks = fd.askopenfilename()
+print("Please confirm alltracks reference file:\n", basename(path_D_alpha_alltracks))
+folder_source = fd.askdirectory()
+print("Please confirm sourse folder path:\n", folder_source)
 folder_save = dirname(path_D_alpha_alltracks)
 
 
