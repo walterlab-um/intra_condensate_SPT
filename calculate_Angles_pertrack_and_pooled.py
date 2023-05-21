@@ -21,10 +21,10 @@ columns = [
 
 s_per_frame = 0.02
 um_per_pixel = 0.117
-folder_path = "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures/May2023_wrapup/Verify_alpha-angledist_on_mobile_vs_constrained"
+folder_path = "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures/May2023_wrapup"
 os.chdir(folder_path)
 
-lst_fname = [f for f in os.listdir(folder_path) if f.startswith("Constrained_")]
+lst_fname = [f for f in os.listdir(folder_path) if f.startswith("Mobile_tracks")]
 
 
 def install_new_trackID(df_in):
