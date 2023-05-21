@@ -2,16 +2,29 @@ import os
 import pandas as pd
 import numpy as np
 from copy import deepcopy
+from rich.progress import track
 
 
-# Output file each row has elements: trackID, total displacement (um), N_steps (could be used to filter out short tracks, whcih would bias), the list of angles, fraction of (-180, -150], (-150, -120], (-120, -90], (-90, -60], (-60, -30], (-30, 0], (0, 30], (30, 60], (60, 90], (90, 120], (120, 150], (150, 180].
+# Output file each row has elements: trackID, N_steps (could be used to filter out short tracks, whcih would bias), total displacement (um), the list of angles, fraction of different bins.
 # fractions are summed to 1; fraction = density * bin width
 # The bins can be altered below
-bins = np.linspace(-180, 180, 13)  # 13 boundaries so 12 bins
+bins = np.linspace(0, 180, 10).astype(int)  # #boundaries = #bins + 1
+lst_fraction_titles = [
+    "(" + str(bins[i]) + "," + str(bins[i + 1]) + "]" for i in range(len(bins) - 1)
+]
+columns = [
+    "trackID",
+    "N_steps",
+    "total displacement (um)",
+    "list of angles",
+] + lst_fraction_titles
+
 s_per_frame = 0.02
 um_per_pixel = 0.117
 folder_path = "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures/May2023_wrapup/Verify_alpha-angledist_on_mobile_vs_constrained"
 os.chdir(folder_path)
+
+lst_fname = [f for f in os.listdir(folder_path) if f.startswith("Constrained_")]
 
 
 def install_new_trackID(df_in):
@@ -51,14 +64,12 @@ def calc_angle(x, y):
     return angles
 
 
-lst_fname = [f for f in os.listdir(folder_path) if f.startswith("Mobile_")]
-
 for fname in lst_fname:
     df_tracks = pd.read_csv(fname, dtype=float)
     df_tracks = install_new_trackID(df_tracks)
     lst_rows_of_df = []
 
-    for trackID in df_tracks["trackID"].unique():
+    for trackID in track(df_tracks["trackID"].unique(), description=fname):
         df_current_track = df_tracks[df_tracks["trackID"] == trackID]
         x = df_current_track["x"].to_numpy(dtype=float)
         y = df_current_track["y"].to_numpy(dtype=float)
@@ -69,35 +80,18 @@ for fname in lst_fname:
         )
 
         angles = calc_angle(x, y)
-        densities, _ = np.histogram(angles, bins, density=True)
+        densities, _ = np.histogram(np.absolute(angles), bins, density=True)
         # fractions are summed to 1; fraction = density * bin width
         fractions = densities * (bins[1] - bins[0])
 
-        # each row has elements: trackID, total displacement (um), N_steps, the list of angles, fractions.
-        new_row = [trackID, total_disp, N_steps, angles.tolist()]
+        # each row has elements: trackID, N_steps, total displacement (um), the list of angles, fractions.
+        new_row = [trackID, N_steps, total_disp, angles.tolist()]
         new_row.extend(fractions.tolist())
         lst_rows_of_df.append(new_row)
 
     df_save = pd.DataFrame.from_records(
         lst_rows_of_df,
-        columns=[
-            "trackID",
-            "total displacement (um)",
-            "N_steps",
-            "list of angles",
-            "(-180, -150]",
-            "(-150, -120]",
-            "(-120, -90]",
-            "(-90, -60]",
-            "(-60, -30]",
-            "(-30, 0]",
-            "(0, 30]",
-            "(30, 60]",
-            "(60, 90]",
-            "(90, 120]",
-            "(120, 150]",
-            "(150, 180]",
-        ],
+        columns=columns,
     )
-    fname_save = fname[:-4] + "_angles.csv"
+    fname_save = "Angles_" + fname
     df_save.to_csv(fname_save, index=False)
