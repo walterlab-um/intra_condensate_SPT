@@ -5,6 +5,9 @@ import numpy as np
 from rich.progress import track
 from tkinter import filedialog as fd
 
+print(
+    "Choose a reference file (Example: EffectiveD-alpha-alltracks_10Dex_noTotR_0h.csv)"
+)
 path_D_alpha_alltracks = fd.askopenfilename()
 print("Please confirm alltracks reference file:\n", basename(path_D_alpha_alltracks))
 folder_source = fd.askdirectory()
@@ -25,9 +28,7 @@ df_constrained = df_mobile[df_mobile["alpha"] <= 0.5]
 
 
 lst_fname_all = df_mobile["filename"].unique().tolist()
-# construct two new dataframe columns
 lst_df_segments_mobile = []
-# lst_df_segments_constrained = []
 
 print("Total number of files:", str(len(lst_fname_all)))
 for fname in track(lst_fname_all):
@@ -40,25 +41,15 @@ for fname in track(lst_fname_all):
         df_current_file["trackID"].isin(set_trackID_mobile)
     ]
 
-    # extract constrained tracks from current file
-    # set_trackID_constrained = set(
-    #     df_constrained[df_constrained["filename"] == fname]["trackID"].unique()
-    # )
-    # df_current_file_constrained = df_current_file[
-    #     df_current_file["trackID"].isin(set_trackID_constrained)
-    # ]
-
     # save
-    lst_df_segments_mobile.append(df_current_file_mobile[["t", "x", "y"]])
-    # lst_df_segments_constrained.append(df_current_file_constrained[["t", "x", "y"]])
+    df_current_file_mobile.insert(
+        0, "filename", np.repeat(fname, df_current_file_mobile.shape[0])
+    )
+    lst_df_segments_mobile.append(
+        df_current_file_mobile[["filename", "trackID", "t", "x", "y"]]
+    )
 
 # construct and save the two dataframe
 df_out_mobile = pd.concat(lst_df_segments_mobile, ignore_index=True)
 fname_save = "Mobile_tracks-" + basename(path_D_alpha_alltracks).split("alltracks_")[-1]
 df_out_mobile.to_csv(join(folder_save, fname_save), index=False)
-
-# df_out_constrained = pd.concat(lst_df_segments_constrained, ignore_index=True)
-# fname_save = (
-#     "Constrained_tracks-" + basename(path_D_alpha_alltracks).split("alltracks_")[-1]
-# )
-# df_out_constrained.to_csv(join(folder_save, fname_save), index=False)
