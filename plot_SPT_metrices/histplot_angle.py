@@ -29,7 +29,7 @@ for fname in lst_fname:
         y=hist_per_track_mean,
         yerr=hist_per_track_std,
         ls="-",
-        color="#9a3324",
+        color="#00274c",
         lw=2,
         capsize=5,
         capthick=3,
@@ -38,6 +38,30 @@ for fname in lst_fname:
     plt.xlabel("Angle between Two Steps, Degree", weight="bold")
     plt.ylabel("Probability", weight="bold")
     plt.xlim(0, 180)
+    plt.xticks(bins)
     plt.tight_layout()
     plt.savefig("AngleHist_PerTrack_" + fname[7:-4] + ".png", format="png")
+    plt.close()
+
+    # Per step
+    lst_angle_arrays = []
+    for array_like_string in df_angles["list of angles"].to_list():
+        lst_angle_arrays.append(
+            np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
+        )
+    all_angles = np.concatenate(lst_angle_arrays)
+    plt.figure(figsize=(5, 4), dpi=300)
+    plt.hist(
+        all_angles,
+        bins=bins,
+        weights=np.ones_like(all_angles) / len(all_angles),
+        color="#00274c",
+    )
+    plt.title(fname[7:-4] + " Per Step", weight="bold")
+    plt.xlabel("Angle between Two Steps, Degree", weight="bold")
+    plt.ylabel("Probability", weight="bold")
+    plt.xlim(0, 180)
+    plt.xticks(bins)
+    plt.tight_layout()
+    plt.savefig("AngleHist_PerStep_" + fname[7:-4] + ".png", format="png")
     plt.close()
