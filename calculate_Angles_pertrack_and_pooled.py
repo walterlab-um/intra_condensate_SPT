@@ -41,7 +41,7 @@ def install_pooled_trackID(df_in):
             lst_newID.append(pooled_trackID)
             current_t = 1
     df_out = deepcopy(df_in)
-    df_out["pooled_trackID"] = lst_newID
+    df_out.insert(0, "pooled_trackID", lst_newID)
     return df_out
 
 
@@ -66,7 +66,8 @@ def calc_angle(x, y):
 
 
 for fname in lst_fname:
-    df_tracks = pd.read_csv(fname, dtype=float)
+    df_tracks = pd.read_csv(fname)
+    df_tracks = df_tracks.astype({"trackID": int, "t": float, "x": float, "y": float})
     df_tracks = install_pooled_trackID(df_tracks)
     lst_rows_of_df = []
 
@@ -74,8 +75,8 @@ for fname in lst_fname:
         df_tracks["pooled_trackID"].unique(), description=fname
     ):
         df_current_track = df_tracks[df_tracks["pooled_trackID"] == pooled_trackID]
-        source_fname = df_current_track["filename"][0]
-        native_trackID = df_current_track["trackID"][0]
+        source_fname = df_current_track["filename"].to_list()[0]
+        native_trackID = df_current_track["trackID"].to_list()[0]
         x = df_current_track["x"].to_numpy(dtype=float)
         y = df_current_track["y"].to_numpy(dtype=float)
 
