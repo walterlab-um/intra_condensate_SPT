@@ -16,9 +16,10 @@ for fname in track(lst_fname):
     df_angles = pd.read_csv(fname)
 
     # Per Track
-    bins = np.linspace(0, 180, df_angles.shape[1] - 3).astype(int)
+    # first five columns are filename, trackID, N_steps, total disp, list of angles. Thus, # of bins = # columes - 5 + 1
+    bins = np.linspace(0, 180, df_angles.shape[1] - 4).astype(int)
 
-    hist_per_track = df_angles.iloc[:, 4:].to_numpy(dtype=float)
+    hist_per_track = df_angles.iloc[:, 5:].to_numpy(dtype=float)
     hist_per_track_mean = np.nanmean(hist_per_track, axis=0)
     hist_per_track_std = np.nanstd(hist_per_track, axis=0)
 
