@@ -2,6 +2,7 @@ import os
 from os.path import join
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 import seaborn as sns
 from rich.progress import track
 
@@ -48,17 +49,21 @@ for i in track(range(len(lst_keys))):
     df_data = df_data.astype(
         {last_column_name: float, "N_steps": float, "Displacement_um": float}
     )
+    df_data = df_data[df_data["Displacement_um"] > 0.2]
 
     plt.figure(figsize=(5, 5), dpi=300)
-    sns.kdeplot(
+    sns.jointplot(
         data=df_data,
         x=last_column_name,
         y="N_steps",
+        kind="kde",
         color=color,
         fill=True,
         thresh=0,
         levels=100,
         cut=0,
+        clip=((0, 0.5), (8, 100)),
+        norm=LogNorm(),
     )
     title = " ".join(dict_input_path[key][:-4].split("_"))
     plt.title(title, weight="bold")
@@ -73,26 +78,29 @@ for i in track(range(len(lst_keys))):
     )
     plt.close()
 
-    plt.figure(figsize=(5, 5), dpi=300)
-    sns.kdeplot(
-        data=df_data,
-        x=last_column_name,
-        y="Displacement_um",
-        color=color,
-        fill=True,
-        thresh=0,
-        levels=100,
-        cut=0,
-    )
-    title = " ".join(dict_input_path[key][:-4].split("_"))
-    plt.title(title, weight="bold")
-    plt.ylabel(r"Track Displacement, $\mu$m", weight="bold")
-    plt.xlabel("Probability of Angle within " + last_column_name, weight="bold")
-    plt.ylim(0, 0.5)
-    plt.xlim(0, 0.5)
-    plt.tight_layout()
-    plt.savefig(
-        join(folder_save, "Disp_vs_constrained_" + dict_input_path[key][:-4] + ".png"),
-        format="png",
-    )
-    plt.close()
+    # plt.figure(figsize=(6, 6), dpi=300)
+    # sns.jointplot(
+    #     data=df_data,
+    #     x=last_column_name,
+    #     y="Displacement_um",
+    #     kind="kde",
+    #     color=color,
+    #     fill=True,
+    #     thresh=0,
+    #     levels=100,
+    #     cut=0,
+    #     clip=((0, 0.5), (0.2, 0.5)),
+    #     norm=LogNorm(),
+    # )
+    # title = " ".join(dict_input_path[key][:-4].split("_"))
+    # plt.title(title, weight="bold")
+    # plt.ylabel(r"Track Displacement, $\mu$m", weight="bold")
+    # plt.xlabel("Probability of Angle within " + last_column_name, weight="bold")
+    # plt.ylim(0.2, 0.5)
+    # plt.xlim(0, 0.5)
+    # plt.tight_layout()
+    # plt.savefig(
+    #     join(folder_save, "Disp_vs_constrained_" + dict_input_path[key][:-4] + ".png"),
+    #     format="png",
+    # )
+    # plt.close()
