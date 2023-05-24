@@ -28,23 +28,6 @@ os.chdir(folder_path)
 lst_fname = [f for f in os.listdir(folder_path) if f.startswith("Mobile_tracks")]
 
 
-def install_pooled_trackID(df_in):
-    current_t = 0
-    pooled_trackID = 0
-    lst_newID = []
-    for t_in_track in df_in["t"]:
-        if t_in_track >= current_t:
-            lst_newID.append(pooled_trackID)
-            current_t += 1
-        elif t_in_track < current_t:
-            pooled_trackID += 1
-            lst_newID.append(pooled_trackID)
-            current_t = 1
-    df_out = deepcopy(df_in)
-    df_out.insert(0, "pooled_trackID", lst_newID)
-    return df_out
-
-
 def calc_angle(x, y):
     # x and y at time 0 and time 1
     x0 = x[:-1]
@@ -68,30 +51,37 @@ def calc_angle(x, y):
 for fname in lst_fname:
     df_tracks = pd.read_csv(fname)
     df_tracks = df_tracks.astype({"trackID": int, "t": float, "x": float, "y": float})
-    df_tracks = install_pooled_trackID(df_tracks)
+    lst_FOV = df_tracks["filename"].unique().tolist()
     lst_rows_of_df = []
 
-    for pooled_trackID in track(
-        df_tracks["pooled_trackID"].unique(), description=fname
-    ):
-        df_current_track = df_tracks[df_tracks["pooled_trackID"] == pooled_trackID]
-        source_fname = df_current_track["filename"].to_list()[0]
-        native_trackID = df_current_track["trackID"].to_list()[0]
-        x = df_current_track["x"].to_numpy(dtype=float)
-        y = df_current_track["y"].to_numpy(dtype=float)
+    for FOVname in track(lst_FOV, description=fname):
+        df_current_FOV = df_tracks[df_tracks["filename"] == FOVname]
+        lst_trackIDs_in_FOV = df_current_FOV["trackID"].unique().tolist()
+        for trackID in lst_trackIDs_in_FOV:
+            df_current_track = df_current_FOV[df_current_FOV["trackID"] == trackID]
+            source_fname = df_current_track["filename"].to_list()[0]
+            native_trackID = df_current_track["trackID"].to_list()[0]
+            x = df_current_track["x"].to_numpy(dtype=float)
+            y = df_current_track["y"].to_numpy(dtype=float)
 
-        N_steps = x.shape[0]
-        disp_um = np.sqrt((x[-1] - x[0]) ** 2 + (y[-1] - y[0]) ** 2) * um_per_pixel
+            N_steps = x.shape[0]
+            disp_um = np.sqrt((x[-1] - x[0]) ** 2 + (y[-1] - y[0]) ** 2) * um_per_pixel
 
-        angles = calc_angle(x, y)
-        densities, _ = np.histogram(np.absolute(angles), bins, density=True)
-        # fractions are summed to 1; fraction = density * bin width
-        fractions = densities * (bins[1] - bins[0])
+            angles = calc_angle(x, y)
+            densities, _ = np.histogram(np.absolute(angles), bins, density=True)
+            # fractions are summed to 1; fraction = density * bin width
+            fractions = densities * (bins[1] - bins[0])
 
-        # each row has elements: source filename, native trackID, N_steps, total displacement (um), the list of angles, fractions.
-        new_row = [source_fname, native_trackID, N_steps, disp_um, angles.tolist()]
-        new_row.extend(fractions.tolist())
-        lst_rows_of_df.append(new_row)
+            # each row has elements: source filename, native trackID, N_steps, total displacement (um), the list of angles, fractions.
+            new_row = [
+                source_fname,
+                native_trackID,
+                N_steps,
+                disp_um,
+                angles.tolist(),
+            ]
+            new_row.extend(fractions.tolist())
+            lst_rows_of_df.append(new_row)
 
     df_save = pd.DataFrame.from_records(
         lst_rows_of_df,
