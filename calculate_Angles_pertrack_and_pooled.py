@@ -16,7 +16,7 @@ columns = [
     "filename",
     "trackID",
     "N_steps",
-    "total displacement (um)",
+    "Displacement_um",
     "list of angles",
 ] + lst_fraction_titles
 
@@ -81,9 +81,7 @@ for fname in lst_fname:
         y = df_current_track["y"].to_numpy(dtype=float)
 
         N_steps = x.shape[0]
-        total_disp = (
-            np.sum(np.sqrt((x[-1] - x[0]) ** 2 + (y[-1] - y[0]) ** 2)) * um_per_pixel
-        )
+        disp_um = np.sqrt((x[-1] - x[0]) ** 2 + (y[-1] - y[0]) ** 2) * um_per_pixel
 
         angles = calc_angle(x, y)
         densities, _ = np.histogram(np.absolute(angles), bins, density=True)
@@ -91,7 +89,7 @@ for fname in lst_fname:
         fractions = densities * (bins[1] - bins[0])
 
         # each row has elements: source filename, native trackID, N_steps, total displacement (um), the list of angles, fractions.
-        new_row = [source_fname, native_trackID, N_steps, total_disp, angles.tolist()]
+        new_row = [source_fname, native_trackID, N_steps, disp_um, angles.tolist()]
         new_row.extend(fractions.tolist())
         lst_rows_of_df.append(new_row)
 
