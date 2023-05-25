@@ -111,6 +111,7 @@ def calc_angle(x, y):
 
 
 lst_rows_of_df = []
+print("Now Processing:", dirname(lst_fpath[0]))
 for fpath in track(lst_fpath):
     df_current_file = pd.read_csv(fpath, dtype=float)
     df_current_file = df_current_file.astype({"t": int})
