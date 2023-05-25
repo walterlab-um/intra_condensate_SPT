@@ -1,14 +1,9 @@
-import os
 from os.path import join, dirname, basename
 import scipy.stats as stats
 import numpy as np
 import pandas as pd
 from tkinter import filedialog as fd
 from rich.progress import track
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-sns.set(color_codes=True, style="white")
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -23,7 +18,7 @@ s_per_frame = 0.02
 
 print("Choose the RNA track csv files for processing:")
 lst_fpath = list(fd.askopenfilenames())
-tracklength_threshold = 5
+tracklength_threshold = 8  # must be 3 + max{len(lags_linear), len(lags_loglog)}
 # lag times for linear MSD-tau fitting (unit: frame)
 lags_linear = np.arange(1, 6, 1)
 # lag times for log-log MSD-tau fitting (unit: frame)
@@ -115,14 +110,14 @@ def calc_angle(x, y):
     return angles
 
 
-for fpath in lst_fpath:
+lst_rows_of_df = []
+for fpath in track(lst_fpath):
     df_current_file = pd.read_csv(fpath, dtype=float)
     df_current_file = df_current_file.astype({"t": int})
     fname = basename(fpath)
     lst_trackID_in_file = df_current_file.trackID.unique().tolist()
 
-    lst_rows_of_df = []
-    for trackID in track(lst_trackID_in_file, description=fname):
+    for trackID in lst_trackID_in_file:
         df_current_track = df_current_file[df_current_file.trackID == trackID]
         tracklength = df_current_track.shape[0]
         if tracklength < tracklength_threshold:
@@ -154,11 +149,12 @@ for fpath in lst_fpath:
         lags = np.arange(1, tracklength - 2)
         lags_phys = lags * s_per_frame
         MSDs = calc_MSD_NonPhysUnit(df_current_track, lags)
+        if np.any(MSDs == 0):  # remove any track with zero MSD
+            continue
         MSDs_phys = MSDs * (um_per_pixel**2)  # um^2
         new_row.append(MSDs_phys.tolist())
         # 11.'list_of_tau_s'
         new_row.append(lags_phys.tolist())
-        # 12.'linear_fit_slope'
 
         # D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
         # diffusion dimension = 2. Note: This is the dimension of the measured data, not the actual movements! Although particles are doing 3D diffussion, the microscopy data is a projection on 2D plane and thus should be treated as 2D diffusion!
@@ -176,147 +172,50 @@ for fpath in lst_fpath:
             log10D_linear = np.NaN
             sigma_phys = np.NaN
 
+        # 12.'linear_fit_slope'
+        new_row.append(slope_linear)
         # 13.'linear_fit_R2'
+        new_row.append(R_linear**2)
         # 14.'linear_fit_sigma'
+        new_row.append(sigma_phys)
         # 15.'linear_fit_D_um2s'
+        new_row.append(D_phys_linear)
         # 16.'linear_fit_log10D'
-        # 17.'loglog_fit_R2'
-        # 18.'loglog_fit_log10D'
-        # 19.'alpha'
-        # 20.'list_of_angles'
-        # 21. angle fractions
+        new_row.append(log10D_linear)
 
         # MSD = 2 n D tau^alpha = 4 D tau^alpha
         # log(MSD) = alpha * log(tau) + log(D) + log(4)
         # Therefore, slope = alpha; intercept = log(D) + log(4)
-        if tracklength < len(lags_loglog) + 3:
-            R_loglog = np.NaN
-            log10D_loglog = np.NaN
-            alpha = np.NaN
-        else:
-            slope_loglog, intercept_loglog, R_loglog, P, std_err = stats.linregress(
-                np.log10(lags_loglog * s_per_frame),
-                np.log10(MSDs_phys[: len(lags_loglog)]),
-            )
-            log10D_loglog = intercept_loglog - np.log10(4)
-            alpha = slope_loglog
+        slope_loglog, intercept_loglog, R_loglog, P, std_err = stats.linregress(
+            np.log10(lags_loglog * s_per_frame),
+            np.log10(MSDs_phys[: len(lags_loglog)]),
+        )
+        log10D_loglog = intercept_loglog - np.log10(4)
+        alpha = slope_loglog
 
-        # basic info
-        lst_fname.append(basename(f))
-        lst_trackID.append(id)
-        lst_MSD.append(MSDs_phys[:5])
-        lst_meanx.append(df_track.x.mean())  # pixel
-        lst_meany.append(df_track.y.mean())  # pixel
-        # linear fit
-        lst_R2_linear.append(R_linear**2)
-        lst_slope_linear.append(slope_linear)  # recorded in case negative
-        lst_D_linear.append(D_phys_linear)  # um^2/s
-        lst_log10D_linear.append(log10D_linear)
-        lst_sigma.append(sigma_phys)  # nm
-        # loglog fit
-        lst_R2_loglog.append(R_loglog**2)
-        lst_log10D_loglog.append(log10D_loglog)
-        lst_alpha.append(alpha)
+        # 17.'loglog_fit_R2'
+        new_row.append(R_loglog**2)
+        # 18.'loglog_fit_log10D'
+        new_row.append(log10D_loglog)
+        # 19.'alpha'
+        new_row.append(alpha)
 
-df_out = pd.DataFrame(
-    {
-        "filename": lst_fname,
-        "trackID": lst_trackID,
-        "MSD": lst_MSD,
-        "mean_x": lst_meanx,
-        "mean_y": lst_meany,
-        "R2_linear": lst_R2_linear,
-        "slope_linear": lst_slope_linear,
-        "D_linear(um^2/s)": lst_D_linear,
-        "log10D_linear": lst_log10D_linear,
-        "sigma(nm)": lst_sigma,
-        "R2_loglog": lst_R2_loglog,
-        "log10D_loglog": lst_log10D_loglog,
-        "alpha": lst_alpha,
-    }
-)
-fpath_save = join(dirname(lst_files[0]), "EffectiveD-alpha-alltracks.csv")
-df_out.to_csv(fpath_save, index=False)
+        angles = calc_angle(x, y)
+        densities, _ = np.histogram(np.absolute(angles), angle_bins, density=True)
+        # fractions are summed to 1; fraction = density * bin width
+        fractions = densities * (angle_bins[1] - angle_bins[0])
 
+        # 20.'list_of_angles'
+        new_row.append(angles.tolist())
+        # 21. angle fractions
+        new_row.extend(fractions.tolist())
 
-# Plotting
+        # Finally, add the new row to the list to form dataframe
+        lst_rows_of_df.append(new_row)
 
-# calculate error bounds
-static_err = 0.016
-um_per_pxl = 0.117
-link_max = 3
-log10D_low = np.log10(static_err**2 / (4 * (s_per_frame)))
-log10D_high = np.log10((um_per_pxl * link_max) ** 2 / (4 * (s_per_frame)))
-plt.figure(figsize=(9, 4), dpi=200)
-sns.histplot(
-    data=df_out[df_out["R2_linear"] > 0.7].log10D_linear,
-    stat="count",
-    bins=30,
-    color=sns.color_palette()[0],
-    alpha=0.5,
+df_save = pd.DataFrame.from_records(
+    lst_rows_of_df,
+    columns=columns,
 )
-plt.axvspan(
-    log10D_low - 1.5, log10D_low, facecolor="dimgray", alpha=0.2, edgecolor="none"
-)
-plt.axvspan(
-    log10D_high, log10D_high + 1.5, facecolor="dimgray", alpha=0.2, edgecolor="none"
-)
-plt.xlim(log10D_low - 1.5, log10D_high + 1.5)
-plt.title("log10D, linear fitting", weight="bold")
-plt.xlabel("log$_{10}$D ($\mu$m^2/s)", weight="bold")
-plt.tight_layout()
-fpath_save = join(dirname(lst_files[0]), "log10D_linear.png")
-plt.savefig(fpath_save, format="png")
-plt.close()
-
-plt.figure(figsize=(9, 4), dpi=200)
-sns.histplot(
-    data=df_out[df_out["R2_linear"] > 0.7]["sigma(nm)"],
-    stat="count",
-    bins=30,
-    color=sns.color_palette()[1],
-    alpha=0.5,
-)
-plt.title("Localization Error Estimate, linear fitting", weight="bold")
-plt.xlabel("$\u03C3$, nm", weight="bold")
-plt.tight_layout()
-fpath_save = join(dirname(lst_files[0]), "sigma_linear.png")
-plt.savefig(fpath_save, format="png")
-plt.close()
-
-plt.figure(figsize=(9, 4), dpi=200)
-sns.histplot(
-    data=df_out[df_out["R2_loglog"] > 0.7].log10D_loglog,
-    stat="count",
-    bins=30,
-    color=sns.color_palette()[2],
-    alpha=0.5,
-)
-plt.axvspan(
-    log10D_low - 1.5, log10D_low, facecolor="dimgray", alpha=0.2, edgecolor="none"
-)
-plt.axvspan(
-    log10D_high, log10D_high + 1.5, facecolor="dimgray", alpha=0.2, edgecolor="none"
-)
-plt.xlim(log10D_low - 1.5, log10D_high + 1.5)
-plt.title("log10D, log-log fitting", weight="bold")
-plt.xlabel("log$_{10}$D ($\mu$m^2/s)", weight="bold")
-plt.tight_layout()
-fpath_save = join(dirname(lst_files[0]), "log10D_loglog.png")
-plt.savefig(fpath_save, format="png")
-plt.close()
-
-plt.figure(figsize=(9, 4), dpi=200)
-sns.histplot(
-    data=df_out[df_out["R2_loglog"] > 0.7].alpha,
-    stat="count",
-    bins=30,
-    color=sns.color_palette()[3],
-    alpha=0.5,
-)
-plt.title("Anomalous Exponent", weight="bold")
-plt.xlabel("$\u03B1$", weight="bold")
-plt.tight_layout()
-fpath_save = join(dirname(lst_files[0]), "alpha.png")
-plt.savefig(fpath_save, format="png")
-plt.close()
+fname_save = join(dirname(fpath), "SPT_results_AIO-pleaserename.csv")
+df_save.to_csv(fname_save, index=False)
