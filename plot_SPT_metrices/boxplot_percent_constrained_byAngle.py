@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from rich.progress import track
 
 sns.set(color_codes=True, style="white")
-
 pd.options.mode.chained_assignment = None  # default='warn'
 
 color_palette = [
@@ -20,21 +20,30 @@ color_palette = [
     "#ae2012",
     "#9b2226",
 ]
-os.chdir(
-    "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures/May2023_wrapup"
-)
+os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
+# threshold 1: minimla tracklength, because too short a track is too stochastic in angle distribution
+threshold_tracklength = 50
+# threshold 2: probability of an angle falls into the last bin, need a factor like 2 here to account for the stochastic nature of SM track
+N_bins = 6
+threshold_last_bin_probability = (1 / N_bins) * 2
+# threshold 3: D error bounds to determine static molecule
+s_per_frame = 0.02
+static_err = 0.016
+threshold_log10D = np.log10(static_err**2 / (4 * (s_per_frame)))
+# threshold 4: Displacement threshold for non static molecules
+threshold_disp = 0.2  # unit: um
 
 dict_input_path = {
-    "0Dex, -, 0h": "Angles_Mobile_tracks-0Dex_noTotR_0h.csv",
-    "0Dex, -, 3h": "Angles_Mobile_tracks-0Dex_noTotR_3h.csv",
-    "0Dex, He, 0h": "Angles_Mobile_tracks-0Dex_Hela_0h.csv",
-    "0Dex, Ce, 0h": "Angles_Mobile_tracks-0Dex_Cerebral_0h.csv",
-    "0Dex, Sp, 0h": "Angles_Mobile_tracks-0Dex_Spinal_0h.csv",
-    "10Dex, -, 0h": "Angles_Mobile_tracks-10Dex_noTotR_0h.csv",
-    "10Dex, -, 3h": "Angles_Mobile_tracks-10Dex_noTotR_3h.csv",
-    "10Dex, He, 0h": "Angles_Mobile_tracks-10Dex_Hela_0h.csv",
-    "10Dex, Ce, 0h": "Angles_Mobile_tracks-10Dex_Cerebral_0h.csv",
-    "10Dex, Sp, 0h": "Angles_Mobile_tracks-10Dex_Spinal_0h.csv",
+    "0Dex, -, 0h": "SPT_results_AIO-0Dex_noTotR_0h.csv",
+    "0Dex, -, 3h": "SPT_results_AIO-0Dex_noTotR_3h.csv",
+    "0Dex, He, 1h": "SPT_results_AIO-0Dex_Hela_1h.csv",
+    "0Dex, Ce, 1h": "SPT_results_AIO-0Dex_Cerebral_1h.csv",
+    "0Dex, Sp, 1h": "SPT_results_AIO-0Dex_Spinal_1h.csv",
+    "10Dex, -, 0h": "SPT_results_AIO-10Dex_noTotR_0h.csv",
+    "10Dex, -, 3h": "SPT_results_AIO-10Dex_noTotR_3h.csv",
+    "10Dex, He, 0h": "SPT_results_AIO-10Dex_Hela_0h.csv",
+    "10Dex, Ce, 0h": "SPT_results_AIO-10Dex_Cerebral_0h.csv",
+    "10Dex, Sp, 0h": "SPT_results_AIO-10Dex_Spinal_0h.csv",
 }
 
 lst_tag = []
@@ -42,17 +51,27 @@ lst_FOVname = []
 lst_N_mobile = []
 lst_N_constrained = []
 lst_fraction_constrained = []
-for key in dict_input_path.keys():
+for key in track(dict_input_path.keys()):
     df_current_file = pd.read_csv(dict_input_path[key])
 
     lst_keys = df_current_file.keys().tolist()
-    N_bins = len(lst_keys) - 5
-    threshold_last_bin_probability = (1 / N_bins) * 1.5
+    df_current_file = df_current_file.astype(
+        {
+            "linear_fit_log10D": float,
+            "N_steps": int,
+            "Displacement_um": float,
+            lst_keys[-1]: float,
+        }
+    )
 
-    df_current_file = df_current_file.astype({lst_keys[-1]: float})
+    df_longtracks = df_current_file[df_current_file["N_steps"] >= threshold_tracklength]
+    df_mobile_byD = df_longtracks[
+        df_longtracks["linear_fit_log10D"] >= threshold_log10D
+    ]
+    df_mobile = df_mobile_byD[df_mobile_byD["Displacement_um"] >= threshold_disp]
 
-    for FOVname in df_current_file.filename.unique():
-        df_currentFOV = df_current_file[df_current_file.filename == FOVname]
+    for FOVname in df_mobile.filename.unique():
+        df_currentFOV = df_mobile[df_mobile.filename == FOVname]
 
         N_mobile = df_currentFOV.shape[0]
         N_constrained = np.sum(

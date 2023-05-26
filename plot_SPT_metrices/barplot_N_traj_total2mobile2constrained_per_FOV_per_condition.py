@@ -14,7 +14,7 @@ os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
 # Displacement threshold for non static molecules
 threshold_disp = 0.2  # unit: um
 # alpha component threshold for constrained diffusion
-threshold_alpha = 0.25
+threshold_alpha = 0.5
 
 dict_input_path = {
     "0Dex, -, 0h": "SPT_results_AIO-0Dex_noTotR_0h.csv",

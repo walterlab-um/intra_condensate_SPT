@@ -30,7 +30,6 @@ dict_input_path = {
 }
 
 # calculate error bounds
-um_per_pixel = 0.117
 s_per_frame = 0.02
 static_err = 0.016
 um_per_pxl = 0.117
