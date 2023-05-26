@@ -1,30 +1,32 @@
-from os.path import join, dirname, basename
 import os
-import numpy as np
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from rich.progress import track
 
 sns.set(color_codes=True, style="white")
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
 color_palette = ["#ffcb05", "#00274c", "#9a3324"]
-os.chdir(
-    "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures/May2023_wrapup"
-)
+os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
+# Displacement threshold for non static molecules
+threshold_disp = 0.2  # unit: um
+# alpha component threshold for constrained diffusion
+threshold_alpha = 0.25
 
 dict_input_path = {
-    "0Dex, -, 0h": "EffectiveD-alpha-alltracks_0Dex_noTotR_0h.csv",
-    "0Dex, -, 3h": "EffectiveD-alpha-alltracks_0Dex_noTotR_3h.csv",
-    "0Dex, He, 1h": "EffectiveD-alpha-alltracks_0Dex_Hela_1h.csv",
-    "0Dex, Ce, 1h": "EffectiveD-alpha-alltracks_0Dex_Cerebral_1h.csv",
-    "0Dex, Sp, 1h": "EffectiveD-alpha-alltracks_0Dex_Spinal_1h.csv",
-    "10Dex, -, 0h": "EffectiveD-alpha-alltracks_10Dex_noTotR_0h.csv",
-    "10Dex, -, 3h": "EffectiveD-alpha-alltracks_10Dex_noTotR_3h.csv",
-    "10Dex, He, 1h": "EffectiveD-alpha-alltracks_10Dex_Hela_1h.csv",
-    "10Dex, Ce, 1h": "EffectiveD-alpha-alltracks_10Dex_Cerebral_1h.csv",
-    "10Dex, Sp, 1h": "EffectiveD-alpha-alltracks_10Dex_Spinal_1h.csv",
+    "0Dex, -, 0h": "SPT_results_AIO-0Dex_noTotR_0h.csv",
+    "0Dex, -, 3h": "SPT_results_AIO-0Dex_noTotR_3h.csv",
+    "0Dex, He, 1h": "SPT_results_AIO-0Dex_Hela_1h.csv",
+    "0Dex, Ce, 1h": "SPT_results_AIO-0Dex_Cerebral_1h.csv",
+    "0Dex, Sp, 1h": "SPT_results_AIO-0Dex_Spinal_1h.csv",
+    "10Dex, -, 0h": "SPT_results_AIO-10Dex_noTotR_0h.csv",
+    "10Dex, -, 3h": "SPT_results_AIO-10Dex_noTotR_3h.csv",
+    "10Dex, He, 0h": "SPT_results_AIO-10Dex_Hela_0h.csv",
+    "10Dex, Ce, 0h": "SPT_results_AIO-10Dex_Cerebral_0h.csv",
+    "10Dex, Sp, 0h": "SPT_results_AIO-10Dex_Spinal_0h.csv",
 }
 
 # calculate error bounds
@@ -40,30 +42,36 @@ lst_tag = []
 lst_FOVname = []
 lst_N_total = []
 lst_N_mobile = []
-lst_N_normal_difuse = []
+lst_N_constrained = []
 lst_fraction_static = []
 lst_fraction_constrained = []
-for key in dict_input_path.keys():
+for key in track(dict_input_path.keys()):
     df_current = pd.read_csv(dict_input_path[key])
-    df_current = df_current.astype({"log10D_linear": float, "alpha": float})
+    df_current = df_current.astype(
+        {"linear_fit_log10D": float, "Displacement_um": float, "alpha": float}
+    )
 
     for FOVname in df_current.filename.unique():
         df_currentFOV = df_current[df_current.filename == FOVname]
-        df_mobile = df_currentFOV[df_currentFOV["log10D_linear"] > log10D_low]
-        df_normal_difuse = df_mobile[df_mobile["alpha"] > 0.5]
+        df_mobile_byD = df_currentFOV[df_currentFOV["linear_fit_log10D"] > log10D_low]
+        df_mobile = df_mobile_byD[df_mobile_byD["Displacement_um"] >= threshold_disp]
+        df_constrained = df_mobile[df_mobile["alpha"] <= threshold_alpha]
 
         N_total = df_currentFOV.shape[0]
         N_mobile = df_mobile.shape[0]
-        N_normal_difuse = df_normal_difuse.shape[0]
+        N_constrained = df_constrained.shape[0]
+
+        if N_constrained < 1:
+            continue
 
         fraction_static = (N_total - N_mobile) / N_total
-        fraction_constrained = (N_mobile - N_normal_difuse) / N_mobile
+        fraction_constrained = N_constrained / N_mobile
 
         lst_tag.append(key)
         lst_FOVname.append(FOVname)
         lst_N_total.append(N_total)
         lst_N_mobile.append(N_mobile)
-        lst_N_normal_difuse.append(N_normal_difuse)
+        lst_N_constrained.append(N_constrained)
         lst_fraction_static.append(fraction_static)
         lst_fraction_constrained.append(fraction_constrained)
 
@@ -74,7 +82,7 @@ df_save = pd.DataFrame(
         "FOVname": lst_FOVname,
         "N, Total": lst_N_total,
         "N, Mobile": lst_N_mobile,
-        "N, Normal Difusion": lst_N_normal_difuse,
+        "N, Constrained": lst_N_constrained,
         "Static Fraction": lst_fraction_static,
         "Constrained Fraction": lst_fraction_constrained,
     },
@@ -84,7 +92,7 @@ df_save.to_csv("N_and_Fraction_per_FOV.csv", index=False)
 
 df_plot = df_save.melt(
     id_vars=["label"],
-    value_vars=["N, Total", "N, Mobile", "N, Normal Difusion"],
+    value_vars=["N, Total", "N, Mobile", "N, Constrained"],
 )
 df_plot = df_plot.rename(columns={"variable": "Type"})
 df_plot.to_csv("barplot_N_traj_per_FOV.csv", index=False)

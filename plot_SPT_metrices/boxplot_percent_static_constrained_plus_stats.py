@@ -24,6 +24,7 @@ color_palette = [
 os.chdir(
     "/Volumes/nwalter-group/Guoming Gao/PROCESSED_DATA/RNA-diffusion-in-FUS/PaperFigures/May2023_wrapup"
 )
+# Run script "barplot_N_traj_total2mobile2constrained_per_FOV_per_condition.py" to get the following csv file
 df_save = pd.read_csv("N_and_Fraction_per_FOV.csv")
 df_plot = df_save.melt(
     id_vars=["label"],
