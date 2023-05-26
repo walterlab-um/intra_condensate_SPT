@@ -1,5 +1,6 @@
 import os
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -8,8 +9,8 @@ from rich.progress import track
 sns.set(color_codes=True, style="white")
 
 os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
-# threshold 1: minimla tracklength, because too short a track is too stochastic in angle distribution
-threshold_tracklength = 50
+# threshold 1: minimla tracklength
+threshold_tracklength = 8
 # threshold 2: probability of an angle falls into the last bin, need a factor like 2 here to account for the stochastic nature of SM track
 N_bins = 6
 threshold_last_bin_probability = (1 / N_bins) * 2
@@ -47,7 +48,16 @@ dict_input_path = {
 
 
 def extract_mobile(df_current_file):
-    global threshold_disp, threshold_log10D, threshold_tracklength
+    global last_column_name, threshold_disp, threshold_log10D, threshold_tracklength
+
+    df_current_file = df_current_file.astype(
+        {
+            "linear_fit_log10D": float,
+            "N_steps": int,
+            "Displacement_um": float,
+            last_column_name: float,
+        }
+    )
 
     df_longtracks = df_current_file[df_current_file["N_steps"] >= threshold_tracklength]
     df_mobile_byD = df_longtracks[
@@ -55,93 +65,65 @@ def extract_mobile(df_current_file):
     ]
     df_mobile = df_mobile_byD[df_mobile_byD["Displacement_um"] >= threshold_disp]
 
-    lst_MSD_arrays = []
-    for array_like_string in df_mobile["list_of_MSD_um2"].to_list():
-        lst_MSD_arrays.append(
-            np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
-        )
-    all_MSD_um2 = np.concatenate(lst_MSD_arrays)
+    return df_mobile
 
-    lst_tau_arrays = []
-    for array_like_string in df_mobile["list_of_tau_s"].to_list():
-        lst_tau_arrays.append(
-            np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
-        )
-    all_tau_s = np.concatenate(lst_tau_arrays)
 
-    df_MSDtau = pd.DataFrame(
-        {
-            "tau_s": all_tau_s,
-            "MSD_um2": all_MSD_um2,
-        },
-        dtype=float,
+def kde_jointplot():
+    global color, col_name_label_lim_x, col_name_label_lim_y, data, fname
+    plt.figure(figsize=(5, 5), dpi=300)
+    sns.jointplot(
+        data=data,
+        x=col_name_label_lim_x[0],
+        y=col_name_label_lim_y[0],
+        kind="kde",
+        color=color,
+        fill=True,
+        thresh=-1e-3,
+        levels=100,
+        cut=0,
+        clip=(col_name_label_lim_x[2], col_name_label_lim_y[2]),
+        cbar=True,
     )
-
-    return df_MSDtau
+    title = " ".join(dict_input_path[key][:-4].split("_"))
+    plt.title(title, weight="bold")
+    plt.ylabel(col_name_label_lim_y[1], weight="bold")
+    plt.xlabel(col_name_label_lim_x[1], weight="bold")
+    plt.ylim(col_name_label_lim_y[2][0], col_name_label_lim_y[2][1])
+    plt.xlim(col_name_label_lim_x[2][0], col_name_label_lim_x[2][1])
+    plt.tight_layout()
+    plt.savefig(fname, format="png")
+    plt.close()
 
 
 lst_keys = list(dict_input_path.keys())
 for i in track(range(len(lst_keys))):
     key = lst_keys[i]
-    df_data = pd.read_csv(dict_input_path[key])
     color = color_palette[i]
 
-    last_column_name = df_data.keys().tolist()[-1]
-    df_data = df_data.astype(
-        {last_column_name: float, "N_steps": float, "Displacement_um": float}
-    )
-    df_data = df_data[df_data["Displacement_um"] > 0.2]
+    df_current_file = pd.read_csv(dict_input_path[key])
+    last_column_name = df_current_file.keys().tolist()[-1]
+    df_mobile = extract_mobile(df_current_file)
 
-    plt.figure(figsize=(5, 5), dpi=300)
-    sns.jointplot(
-        data=df_data,
-        x=last_column_name,
-        y="N_steps",
-        kind="kde",
-        color=color,
-        fill=True,
-        thresh=0,
-        levels=100,
-        cut=0,
-        clip=((0, 0.5), (8, 100)),
-        norm=LogNorm(),
+    col_name_label_lim_x = (
+        last_column_name,
+        "Probability of Angle within " + last_column_name,
+        (0, 0.5),
     )
-    title = " ".join(dict_input_path[key][:-4].split("_"))
-    plt.title(title, weight="bold")
-    plt.ylabel("Number of Steps in a Trajectory", weight="bold")
-    plt.xlabel("Probability of Angle within " + last_column_name, weight="bold")
-    plt.ylim(8, 100)
-    plt.xlim(0, 0.5)
-    plt.tight_layout()
-    plt.savefig(
-        join(folder_save, "N_vs_constrained_" + dict_input_path[key][:-4] + ".png"),
-        format="png",
+    col_name_label_lim_y = (
+        "N_steps",
+        "Number of Steps in a Trajectory",
+        (threshold_tracklength, 100),
     )
-    plt.close()
+    fname = "N_vs_constrained_" + dict_input_path[key][:-4] + ".png"
 
-    # plt.figure(figsize=(6, 6), dpi=300)
-    # sns.jointplot(
-    #     data=df_data,
-    #     x=last_column_name,
-    #     y="Displacement_um",
-    #     kind="kde",
-    #     color=color,
-    #     fill=True,
-    #     thresh=0,
-    #     levels=100,
-    #     cut=0,
-    #     clip=((0, 0.5), (0.2, 0.5)),
-    #     norm=LogNorm(),
-    # )
-    # title = " ".join(dict_input_path[key][:-4].split("_"))
-    # plt.title(title, weight="bold")
-    # plt.ylabel(r"Track Displacement, $\mu$m", weight="bold")
-    # plt.xlabel("Probability of Angle within " + last_column_name, weight="bold")
-    # plt.ylim(0.2, 0.5)
-    # plt.xlim(0, 0.5)
-    # plt.tight_layout()
-    # plt.savefig(
-    #     join(folder_save, "Disp_vs_constrained_" + dict_input_path[key][:-4] + ".png"),
-    #     format="png",
-    # )
-    # plt.close()
+    selector = (
+        (df_mobile[col_name_label_lim_x[0]] >= col_name_label_lim_x[2][0])
+        & (df_mobile[col_name_label_lim_x[0]] <= col_name_label_lim_x[2][1])
+        & (df_mobile[col_name_label_lim_y[0]] >= col_name_label_lim_y[2][0])
+        & (df_mobile[col_name_label_lim_y[0]] <= col_name_label_lim_y[2][1])
+    )
+    data = df_mobile[selector]
+
+    kde_jointplot()
+
+    break
