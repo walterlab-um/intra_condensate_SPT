@@ -26,16 +26,16 @@ os.chdir(
 )
 
 dict_input_path = {
-    "0Dex, -, 0h": "EffectiveD-alpha-alltracks_0Dex_noTotR_0h.csv",
-    "0Dex, -, 3h": "EffectiveD-alpha-alltracks_0Dex_noTotR_3h.csv",
-    "0Dex, He, 1h": "EffectiveD-alpha-alltracks_0Dex_Hela_1h.csv",
-    "0Dex, Ce, 1h": "EffectiveD-alpha-alltracks_0Dex_Cerebral_1h.csv",
-    "0Dex, Sp, 1h": "EffectiveD-alpha-alltracks_0Dex_Spinal_1h.csv",
-    "10Dex, -, 0h": "EffectiveD-alpha-alltracks_10Dex_noTotR_0h.csv",
-    "10Dex, -, 3h": "EffectiveD-alpha-alltracks_10Dex_noTotR_3h.csv",
-    "10Dex, He, 1h": "EffectiveD-alpha-alltracks_10Dex_Hela_1h.csv",
-    "10Dex, Ce, 1h": "EffectiveD-alpha-alltracks_10Dex_Cerebral_1h.csv",
-    "10Dex, Sp, 1h": "EffectiveD-alpha-alltracks_10Dex_Spinal_1h.csv",
+    "0Dex, -, 0h": "SPT_results_AIO-0Dex_noTotR_0h.csv",
+    "0Dex, -, 3h": "SPT_results_AIO-0Dex_noTotR_3h.csv",
+    "0Dex, He, 1h": "SPT_results_AIO-0Dex_Hela_1h.csv",
+    "0Dex, Ce, 1h": "SPT_results_AIO-0Dex_Cerebral_1h.csv",
+    "0Dex, Sp, 1h": "SPT_results_AIO-0Dex_Spinal_1h.csv",
+    "10Dex, -, 0h": "SPT_results_AIO-10Dex_noTotR_0h.csv",
+    "10Dex, -, 3h": "SPT_results_AIO-10Dex_noTotR_3h.csv",
+    "10Dex, He, 1h": "SPT_results_AIO-10Dex_Hela_0h.csv",
+    "10Dex, Ce, 1h": "SPT_results_AIO-10Dex_Cerebral_0h.csv",
+    "10Dex, Sp, 1h": "SPT_results_AIO-10Dex_Spinal_0h.csv",
 }
 
 
