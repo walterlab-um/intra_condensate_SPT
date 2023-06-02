@@ -9,8 +9,8 @@ from rich.progress import track
 sns.set(color_codes=True, style="white")
 
 os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
-# threshold 1: minimla tracklength
-threshold_tracklength = 8
+# threshold 1: minimal tracklength for mobile bolecules, upper limit for plotting
+threshold_tracklength = (8, 100)
 # threshold 2: probability of an angle falls into the last bin, need a factor like 2 here to account for the stochastic nature of SM track
 N_bins = 6
 threshold_last_bin_probability = (1 / N_bins) * 2
@@ -18,8 +18,10 @@ threshold_last_bin_probability = (1 / N_bins) * 2
 s_per_frame = 0.02
 static_err = 0.016
 threshold_log10D = np.log10(static_err**2 / (4 * (s_per_frame)))
-# threshold 4: Displacement threshold for non static molecules
-threshold_disp = 0.2  # unit: um
+# threshold 4: Displacement threshold for mobile bolecules, upper limit for plotting
+threshold_disp = (0.2, 1)  # unit: um
+# threshold 5: alpha threshold for constrained molecules
+threshold_alpha = 0.7
 
 color_palette = [
     "#001219",
@@ -59,18 +61,31 @@ def extract_mobile(df_current_file):
         }
     )
 
-    df_longtracks = df_current_file[df_current_file["N_steps"] >= threshold_tracklength]
+    df_longtracks = df_current_file[
+        df_current_file["N_steps"] >= threshold_tracklength[0]
+    ]
     df_mobile_byD = df_longtracks[
         df_longtracks["linear_fit_log10D"] >= threshold_log10D
     ]
-    df_mobile = df_mobile_byD[df_mobile_byD["Displacement_um"] >= threshold_disp]
+    df_mobile = df_mobile_byD[df_mobile_byD["Displacement_um"] >= threshold_disp[0]]
 
     return df_mobile
 
 
 def kde_jointplot():
-    global color, col_name_label_lim_x, col_name_label_lim_y, data, fname
+    global color, col_name_label_lim_x, col_name_label_lim_y, df_mobile, fname
+
+    selector = (
+        (df_mobile[col_name_label_lim_x[0]] >= col_name_label_lim_x[2][0])
+        & (df_mobile[col_name_label_lim_x[0]] <= col_name_label_lim_x[2][1])
+        & (df_mobile[col_name_label_lim_y[0]] >= col_name_label_lim_y[2][0])
+        & (df_mobile[col_name_label_lim_y[0]] <= col_name_label_lim_y[2][1])
+    )
+    data = df_mobile[selector]
+
     plt.figure(figsize=(5, 5), dpi=300)
+    plt.ylim(col_name_label_lim_y[2][0], col_name_label_lim_y[2][1])
+    plt.xlim(col_name_label_lim_x[2][0], col_name_label_lim_x[2][1])
     sns.jointplot(
         data=data,
         x=col_name_label_lim_x[0],
@@ -78,18 +93,15 @@ def kde_jointplot():
         kind="kde",
         color=color,
         fill=True,
-        thresh=-1e-3,
+        thresh=0,
         levels=100,
-        cut=0,
-        clip=(col_name_label_lim_x[2], col_name_label_lim_y[2]),
+        cut=3,
         cbar=True,
     )
     title = " ".join(dict_input_path[key][:-4].split("_"))
     plt.title(title, weight="bold")
     plt.ylabel(col_name_label_lim_y[1], weight="bold")
     plt.xlabel(col_name_label_lim_x[1], weight="bold")
-    plt.ylim(col_name_label_lim_y[2][0], col_name_label_lim_y[2][1])
-    plt.xlim(col_name_label_lim_x[2][0], col_name_label_lim_x[2][1])
     plt.tight_layout()
     plt.savefig(fname, format="png")
     plt.close()
@@ -104,6 +116,7 @@ for i in track(range(len(lst_keys))):
     last_column_name = df_current_file.keys().tolist()[-1]
     df_mobile = extract_mobile(df_current_file)
 
+    # N steps vs reflect angle
     col_name_label_lim_x = (
         last_column_name,
         "Probability of Angle within " + last_column_name,
@@ -112,18 +125,49 @@ for i in track(range(len(lst_keys))):
     col_name_label_lim_y = (
         "N_steps",
         "Number of Steps in a Trajectory",
-        (threshold_tracklength, 100),
+        threshold_tracklength,
     )
-    fname = "N_vs_constrained_" + dict_input_path[key][:-4] + ".png"
-
-    selector = (
-        (df_mobile[col_name_label_lim_x[0]] >= col_name_label_lim_x[2][0])
-        & (df_mobile[col_name_label_lim_x[0]] <= col_name_label_lim_x[2][1])
-        & (df_mobile[col_name_label_lim_y[0]] >= col_name_label_lim_y[2][0])
-        & (df_mobile[col_name_label_lim_y[0]] <= col_name_label_lim_y[2][1])
-    )
-    data = df_mobile[selector]
-
+    fname = "N_vs_Angle_" + dict_input_path[key][:-4] + ".png"
     kde_jointplot()
 
-    break
+    # Displacement vs reflect angle
+    col_name_label_lim_x = (
+        last_column_name,
+        "Probability of Angle within " + last_column_name,
+        (0, 0.5),
+    )
+    col_name_label_lim_y = (
+        "Displacement_um",
+        r"Trajectory Displacement, $\mu$m",
+        threshold_disp,
+    )
+    fname = "Disp_vs_Angle_" + dict_input_path[key][:-4] + ".png"
+    kde_jointplot()
+
+    # N steps vs alpha
+    col_name_label_lim_x = (
+        "alpha",
+        r"$\alpha$ <= " + str(round(threshold_alpha, 2)),
+        (0, threshold_alpha),
+    )
+    col_name_label_lim_y = (
+        "N_steps",
+        "Number of Steps in a Trajectory",
+        threshold_tracklength,
+    )
+    fname = "N_vs_alpha_" + dict_input_path[key][:-4] + ".png"
+    kde_jointplot()
+
+    # length vs alpha
+    col_name_label_lim_x = (
+        "alpha",
+        r"$\alpha$ <= " + str(round(threshold_alpha, 2)),
+        (0, threshold_alpha),
+    )
+    col_name_label_lim_y = (
+        "Displacement_um",
+        r"Trajectory Displacement, $\mu$m",
+        (threshold_disp[0], threshold_disp[1]),
+    )
+    fname = "Disp_vs_alpha_" + dict_input_path[key][:-4] + ".png"
+    kde_jointplot()
