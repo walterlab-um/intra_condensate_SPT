@@ -1,12 +1,8 @@
 import os
-from os.path import join, basename, dirname
+from os.path import join, dirname
 import numpy as np
 import pandas as pd
 import fastspt
-import fastspt.fastSPT_tools as fastSPT_tools
-import fastspt.fastSPT_plot as fastSPT_plot
-from tkinter import filedialog as fd
-from rich.progress import track
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -24,7 +20,7 @@ s_per_frame = 0.02
 Frac_Bound = [0, 1]
 Frac_Fast = [0, 1]
 # Following bounds are designed based on saSPT results
-D_Fast = [10 ** (-1.5), 10 ** (0)]
+D_Fast = [10 ** (-2.5), 10 ** (0)]
 D_Slow = [10 ** (-2.5), 10 ** (-1)]
 D_Static = [10 ** (-3.5), 10 ** (-2)]
 LB = [D_Fast[0], D_Slow[0], D_Static[0], Frac_Fast[0], Frac_Bound[0]]
@@ -61,7 +57,7 @@ def reformat_for_SpotON(df_AIO):
         array_like_string = row["list_of_y"]
         array_y = np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
         array_like_string = row["list_of_t"]
-        array_frame = np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
+        array_frame = np.fromstring(array_like_string[1:-1], sep=", ", dtype="uint8")
 
         frame = np.array([array_frame])
         time = np.array([array_frame * s_per_frame])
