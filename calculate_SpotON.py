@@ -41,6 +41,47 @@ params = {
 
 #########################################
 # Reformat and perform fitting
+
+
+def reformat_for_SpotON(df_AIO):
+    global threshold_disp
+
+    df_mobile = df_AIO[df_AIO["Displacement_um"] >= threshold_disp]
+
+    lst_x = []
+    for array_like_string in df_mobile["list_of_x"].to_list():
+        lst_x.append(np.fromstring(array_like_string[1:-1], sep=", ", dtype=float))
+    all_x = np.concatenate(lst_x)
+
+    lst_y = []
+    for array_like_string in df_mobile["list_of_y"].to_list():
+        lst_y.append(np.fromstring(array_like_string[1:-1], sep=", ", dtype=float))
+    all_y = np.concatenate(lst_y)
+
+    lst_frame = []
+    lst_trackID = []
+    trackID = 0
+    for array_like_string in df_mobile["list_of_t"].to_list():
+        array_frame = np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
+        lst_frame.append(array_frame)
+        lst_trackID.append(np.ones_like(array_frame) * trackID)
+        trackID += 1
+    all_frame = np.concatenate(lst_frame)
+    all_trackID = np.concatenate(lst_trackID)
+
+    df_SpotON_input = pd.DataFrame(
+        {
+            "x": all_x,
+            "y": all_y,
+            "trajectory": all_trackID,
+            "frame": all_frame,
+        },
+        dtype=float,
+    )
+
+    return df_SpotON_input
+
+
 SpotONinput = []
 for file in track(lst_files, description="Pooling..."):
     df = pd.read_csv(file)
