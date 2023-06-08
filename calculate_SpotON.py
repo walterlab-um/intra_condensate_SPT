@@ -10,34 +10,37 @@ from rich.progress import track
 import warnings
 
 warnings.filterwarnings("ignore")
+# Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
+os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
+lst_fname = [f for f in os.listdir(".") if f.startswith("SPT_results_AIO")]
 
-print("Choose all track files to be pooled for saSPT:")
-lst_files = list(fd.askopenfilenames())
-
-## Generate a dictionary of parameters
+#########################################
+# SpotON parameters
 Frac_Bound = [0, 1]
-D_Free = [10 ** (-2.5), 10 ** (0.2)]
-D_Bound = [10 ** (-4), 10 ** (-2.5)]
-sigma_bound = [0.005, 0.1]
-LB = [D_Free[0], D_Bound[0], Frac_Bound[0], sigma_bound[0]]
-UB = [D_Free[1], D_Bound[1], Frac_Bound[1], sigma_bound[1]]
+Frac_Fast = [0, 1]
+# Following bounds are designed based on saSPT results
+D_Fast = [10 ** (-1.5), 10 ** (0)]
+D_Slow = [10 ** (-2.5), 10 ** (-1)]
+D_Static = [10 ** (-3.5), 10 ** (-2)]
+LB = [D_Fast[0], D_Slow[0], D_Static[0], Frac_Fast[0], Frac_Bound[0]]
+UB = [D_Fast[1], D_Slow[1], D_Static[1], Frac_Fast[1], Frac_Bound[1]]
 
 params = {
     "UB": UB,
     "LB": LB,
-    "LocError": None,  # Manually input the localization error in um: 35 nm = 0.035 um.
+    "LocError": None,  # Manually input the localization error in um. None means estimating the localization error from the data.
     "iterations": 3,  # Manually input the desired number of fitting iterations:
     "dT": 0.02,  # Time between frames in seconds
-    "dZ": 0.700,  # The axial illumination slice: measured to be roughly 700 nm
+    "dZ": 0.7,  # The axial illumination slice
     "ModelFit": [1, 2][False],
-    "fit2states": True,
-    "fitSigma": True,
+    "fit2states": False,
     "a": 0.15716,
     "b": 0.20811,
     "useZcorr": True,
 }
 
-
+#########################################
+# Reformat and perform fitting
 SpotONinput = []
 for file in track(lst_files, description="Pooling..."):
     df = pd.read_csv(file)
@@ -63,8 +66,8 @@ fit = fastspt.fit_jump_length_distribution(
 
 D_free = fit.params["D_free"].value
 D_free_SE = fit.params["D_free"].stderr  # standard error
-D_bound = fit.params["D_bound"].value
-D_bound_SE = fit.params["D_bound"].stderr
+D_Static = fit.params["D_Static"].value
+D_Static_SE = fit.params["D_Static"].stderr
 F_bound = fit.params["F_bound"].value
 F_bound_SE = fit.params["F_bound"].stderr
 fit_sigma = fit.params["sigma"].value
@@ -75,8 +78,8 @@ df_save = pd.DataFrame(
         "item": [
             "D_free",
             "D_free_SE",
-            "D_bound",
-            "D_bound_SE",
+            "D_Static",
+            "D_Static_SE",
             "F_bound",
             "F_bound_SE",
             "fit_sigma",
@@ -85,8 +88,8 @@ df_save = pd.DataFrame(
         "value": [
             D_free,
             D_free_SE,
-            D_bound,
-            D_bound_SE,
+            D_Static,
+            D_Static_SE,
             F_bound,
             F_bound_SE,
             fit_sigma,
