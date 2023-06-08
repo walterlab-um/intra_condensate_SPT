@@ -13,6 +13,11 @@ warnings.filterwarnings("ignore")
 # Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
 os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
 lst_fname = [f for f in os.listdir(".") if f.startswith("SPT_results_AIO")]
+# Displacement threshold for non static molecules
+threshold_disp = 0.2  # unit: um
+# scalling factors
+um_per_pixel = 0.117
+s_per_frame = 0.02
 
 #########################################
 # SpotON parameters
@@ -44,55 +49,35 @@ params = {
 
 
 def reformat_for_SpotON(df_AIO):
-    global threshold_disp
+    # following format was interpreted from SpotON package
+    global threshold_disp, um_per_pixel, s_per_frame
 
     df_mobile = df_AIO[df_AIO["Displacement_um"] >= threshold_disp]
 
-    lst_x = []
-    for array_like_string in df_mobile["list_of_x"].to_list():
-        lst_x.append(np.fromstring(array_like_string[1:-1], sep=", ", dtype=float))
-    all_x = np.concatenate(lst_x)
-
-    lst_y = []
-    for array_like_string in df_mobile["list_of_y"].to_list():
-        lst_y.append(np.fromstring(array_like_string[1:-1], sep=", ", dtype=float))
-    all_y = np.concatenate(lst_y)
-
-    lst_frame = []
-    lst_trackID = []
-    trackID = 0
-    for array_like_string in df_mobile["list_of_t"].to_list():
+    SpotONinput = []
+    for _, row in df_mobile.iterrows():
+        array_like_string = row["list_of_x"]
+        array_x = np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
+        array_like_string = row["list_of_y"]
+        array_y = np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
+        array_like_string = row["list_of_t"]
         array_frame = np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
-        lst_frame.append(array_frame)
-        lst_trackID.append(np.ones_like(array_frame) * trackID)
-        trackID += 1
-    all_frame = np.concatenate(lst_frame)
-    all_trackID = np.concatenate(lst_trackID)
 
-    df_SpotON_input = pd.DataFrame(
-        {
-            "x": all_x,
-            "y": all_y,
-            "trajectory": all_trackID,
-            "frame": all_frame,
-        },
-        dtype=float,
-    )
-
-    return df_SpotON_input
-
-
-SpotONinput = []
-for file in track(lst_files, description="Pooling..."):
-    df = pd.read_csv(file)
-    lst_trackID = list(set(df.trackID))
-    for trackID in lst_trackID:
-        track = df[df.trackID == trackID]
-        frame = np.array([track.t.to_numpy(dtype="uint8")])
-        time = np.array([track.t.to_numpy() * 0.02])
-        xy = np.array([[x * 0.117, y * 0.117] for x, y in zip(track.x, track.y)])
+        frame = np.array([array_frame])
+        time = np.array([array_frame * s_per_frame])
+        xy = np.array(
+            [[x * um_per_pixel, y * um_per_pixel] for x, y in zip(array_x, array_y)]
+        )
         SpotONinput.append((xy, time, frame))
-SpotONinput = np.array(SpotONinput, dtype=object)
+
+    SpotONinput = np.array(SpotONinput, dtype=object)
+
+    return SpotONinput
+
+
+fname = lst_fname[0]
+df_AIO = pd.read_csv(fname)
+SpotONinput = reformat_for_SpotON(df_AIO)
 
 h_test = fastspt.compute_jump_length_distribution(
     SpotONinput, CDF=True, useEntireTraj=False
