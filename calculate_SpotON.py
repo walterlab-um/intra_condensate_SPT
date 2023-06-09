@@ -1,11 +1,14 @@
 import os
-from os.path import join, dirname
 import numpy as np
 import pandas as pd
 import fastspt
+from rich.progress import track
 import warnings
 
 warnings.filterwarnings("ignore")
+
+# Calculate SpotON based on replicate, not FOV
+
 # Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
 os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
 lst_fname = [f for f in os.listdir(".") if f.startswith("SPT_results_AIO")]
@@ -16,39 +19,58 @@ um_per_pixel = 0.117
 s_per_frame = 0.02
 
 #########################################
-# SpotON parameters
-Frac_Bound = [0, 1]
-Frac_Fast = [0, 1]
-# Following bounds are designed based on saSPT results
-D_Fast = [10 ** (-2.5), 10 ** (0)]
-D_Slow = [10 ** (-2.5), 10 ** (-1)]
-D_Static = [10 ** (-3.5), 10 ** (-2)]
-LB = [D_Fast[0], D_Slow[0], D_Static[0], Frac_Fast[0], Frac_Bound[0]]
-UB = [D_Fast[1], D_Slow[1], D_Static[1], Frac_Fast[1], Frac_Bound[1]]
+# Output file structure
+columns = [
+    "replicate_prefix",
+    "N_tracks",
+    "D_fast",
+    "D_fast_SE",
+    "D_slow",
+    "D_slow_SE",
+    "D_static",
+    "D_static_SE",
+    "F_fast",
+    "F_fast_SE",
+    "F_slow",
+    "F_slow_SE",
+    "F_static",
+    "F_static_SE",
+]
 
-params = {
-    "UB": UB,
-    "LB": LB,
-    "LocError": None,  # Manually input the localization error in um. None means estimating the localization error from the data.
-    "iterations": 3,  # Manually input the desired number of fitting iterations:
-    "dT": 0.02,  # Time between frames in seconds
-    "dZ": 0.7,  # The axial illumination slice
-    "ModelFit": [1, 2][False],
-    "fit2states": False,
-    "a": 0.15716,
-    "b": 0.20811,
-    "useZcorr": True,
-}
+#########################################
+# SpotON parameters
+Frac_Bound_range = [0, 1]
+Frac_Fast_range = [0, 1]
+# Following bounds are designed based on saSPT results
+D_fast_range = [10 ** (-2.5), 10 ** (0)]
+D_med_range = [10 ** (-2.5), 10 ** (-1)]
+D_bound_range = [10 ** (-3.5), 10 ** (-2)]
+LB = [
+    D_fast_range[0],
+    D_med_range[0],
+    D_bound_range[0],
+    Frac_Fast_range[0],
+    Frac_Bound_range[0],
+]
+UB = [
+    D_fast_range[1],
+    D_med_range[1],
+    D_bound_range[1],
+    Frac_Fast_range[1],
+    Frac_Bound_range[1],
+]
+N_iterations = 3  # desired number of fitting iterations
+dZ = 0.7  # The axial illumination slice, um
+
 
 #########################################
 # Reformat and perform fitting
-
-
-def reformat_for_SpotON(df_AIO):
+def reformat_for_SpotON(df_in):
     # following format was interpreted from SpotON package
     global threshold_disp, um_per_pixel, s_per_frame
 
-    df_mobile = df_AIO[df_AIO["Displacement_um"] >= threshold_disp]
+    df_mobile = df_in[df_in["Displacement_um"] >= threshold_disp]
+    # df_mobile = df_in
 
     SpotONinput = []
     for _, row in df_mobile.iterrows():
@@ -71,54 +93,90 @@ def reformat_for_SpotON(df_AIO):
     return SpotONinput
 
 
-fname = lst_fname[0]
-df_AIO = pd.read_csv(fname)
-SpotONinput = reformat_for_SpotON(df_AIO)
+for fname in track(lst_fname):
+    df_AIO = pd.read_csv(fname)
+    # all filenames within the current condition/file
+    all_filenames = df_AIO["filename"].unique().tolist()
+    # filename prefix for each replicate
+    replicate_prefixs = np.unique([f.split("FOV")[0] for f in all_filenames])
+    # Main
+    lst_rows_of_df = []
+    for prefix in replicate_prefixs:
+        current_replicate_filenames = [f for f in all_filenames if prefix in f]
+        df_current_replicate = df_AIO[
+            df_AIO["filename"].isin(current_replicate_filenames)
+        ]
 
-h_test = fastspt.compute_jump_length_distribution(
-    SpotONinput, CDF=True, useEntireTraj=False
-)
-HistVecJumpsCDF, JumpProbCDF, HistVecJumps, JumpProb, _ = h_test
+        # Perform Spot ON
+        SpotONinput = reformat_for_SpotON(df_current_replicate)
+        N_tracks = SpotONinput.shape[0]
+        h_test = fastspt.compute_jump_length_distribution(
+            SpotONinput, CDF=True, useEntireTraj=False
+        )
+        HistVecJumpsCDF, JumpProbCDF, HistVecJumps, JumpProb, _ = h_test
 
-## Perform the fit
-fit = fastspt.fit_jump_length_distribution(
-    JumpProb, JumpProbCDF, HistVecJumps, HistVecJumpsCDF, **params
-)
+        ## Perform the fit
+        localization_error_um = df_current_replicate["linear_fit_sigma"].mean() / 1000
+        params = {
+            "UB": UB,
+            "LB": LB,
+            "LocError": localization_error_um,
+            "iterations": N_iterations,
+            "dT": s_per_frame,
+            "dZ": dZ,
+            "ModelFit": [1, 2][False],
+            "fit2states": False,
+            "a": 0.15716,
+            "b": 0.20811,
+            "useZcorr": True,
+        }
+        fit = fastspt.fit_jump_length_distribution(
+            JumpProb, JumpProbCDF, HistVecJumps, HistVecJumpsCDF, **params
+        )
 
+        # Diffusion coefficent value
+        D_fast = fit.params["D_fast"].value
+        D_slow = fit.params["D_med"].value
+        D_static = fit.params["D_bound"].value
+        # Diffusion coefficent error
+        D_fast_SE = fit.params["D_fast"].stderr
+        D_slow_SE = fit.params["D_med"].stderr
+        D_static_SE = fit.params["D_bound"].stderr
+        # Fraction value
+        F_fast = fit.params["F_fast"].value
+        F_static = fit.params["F_bound"].value
+        F_slow = 1 - F_fast - F_static
+        # Fraction error, using Subtraction Formula for error propagation
+        F_fast_SE = fit.params["F_fast"].stderr
+        F_static_SE = fit.params["F_bound"].stderr
+        if (F_fast_SE is None) or (F_static_SE is None):
+            F_slow_SE = np.nan
+        else:
+            F_slow_SE = np.sqrt(F_fast_SE**2 + F_static_SE**2)
 
-D_free = fit.params["D_free"].value
-D_free_SE = fit.params["D_free"].stderr  # standard error
-D_Static = fit.params["D_Static"].value
-D_Static_SE = fit.params["D_Static"].stderr
-F_bound = fit.params["F_bound"].value
-F_bound_SE = fit.params["F_bound"].stderr
-fit_sigma = fit.params["sigma"].value
-fit_sigma_SE = fit.params["sigma"].stderr
+        # save
+        lst_rows_of_df.append(
+            [
+                prefix,
+                N_tracks,
+                D_fast,
+                D_fast_SE,
+                D_slow,
+                D_slow_SE,
+                D_static,
+                D_static_SE,
+                F_fast,
+                F_fast_SE,
+                F_slow,
+                F_slow_SE,
+                F_static,
+                F_static_SE,
+            ]
+        )
 
-df_save = pd.DataFrame(
-    {
-        "item": [
-            "D_free",
-            "D_free_SE",
-            "D_Static",
-            "D_Static_SE",
-            "F_bound",
-            "F_bound_SE",
-            "fit_sigma",
-            "fit_sigma_SE",
-        ],
-        "value": [
-            D_free,
-            D_free_SE,
-            D_Static,
-            D_Static_SE,
-            F_bound,
-            F_bound_SE,
-            fit_sigma,
-            fit_sigma_SE,
-        ],
-    },
-    dtype=float,
-)
-path_save = join(dirname(lst_files[0]), "SpotON_results_pooled.csv")
-df_save.to_csv(path_save, index=False)
+    df_save = pd.DataFrame.from_records(
+        lst_rows_of_df,
+        columns=columns,
+    )
+    fname_save = "SPOTON_results-" + fname[16:]
+    df_save.to_csv(fname_save, index=False)
