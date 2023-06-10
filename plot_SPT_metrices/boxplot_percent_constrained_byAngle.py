@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from statannot import add_stat_annotation
 from rich.progress import track
 
 sns.set(color_codes=True, style="white")
@@ -45,6 +46,18 @@ dict_input_path = {
     "10Dex, Ce, 0h": "SPT_results_AIO-10Dex_Cerebral_0h.csv",
     "10Dex, Sp, 0h": "SPT_results_AIO-10Dex_Spinal_0h.csv",
 }
+box_pairs = [
+    ("0Dex, -, 0h", "0Dex, -, 3h"),
+    ("10Dex, -, 0h", "10Dex, -, 3h"),
+    ("0Dex, -, 0h", "0Dex, He, 1h"),
+    ("10Dex, -, 0h", "10Dex, He, 0h"),
+    ("0Dex, He, 1h", "0Dex, Ce, 1h"),
+    ("0Dex, He, 1h", "0Dex, Sp, 1h"),
+    ("0Dex, Ce, 1h", "0Dex, Sp, 1h"),
+    ("10Dex, He, 0h", "10Dex, Ce, 0h"),
+    ("10Dex, He, 0h", "10Dex, Sp, 0h"),
+    ("10Dex, Ce, 0h", "10Dex, Sp, 0h"),
+]
 
 lst_tag = []
 lst_FOVname = []
@@ -95,7 +108,7 @@ df_save = pd.DataFrame(
         "N, Constrained, by Angle": lst_N_constrained,
         "Constrained Fraction, by Angle": lst_fraction_constrained,
     },
-    dtype=object,
+    dtype=None,
 )
 df_save.to_csv("N_and_Fraction_per_FOV_byAngle.csv", index=False)
 
@@ -112,6 +125,18 @@ ax = sns.stripplot(
     x="label",
     y="Constrained Fraction, by Angle",
     color="0.4",
+)
+test_results = add_stat_annotation(
+    ax,
+    data=df_save,
+    x="label",
+    y="Constrained Fraction, by Angle",
+    box_pairs=box_pairs,
+    test="t-test_welch",
+    comparisons_correction=None,
+    text_format="star",
+    loc="inside",
+    verbose=2,
 )
 plt.title("Constrained Fraction per FOV, by Angle", weight="bold")
 plt.ylabel("Constrained Fraction, by Angle", weight="bold")
