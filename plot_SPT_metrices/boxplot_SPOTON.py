@@ -84,10 +84,10 @@ def box_strip_plot(column_to_plot, ylabel):
         low_bound, high_bound = dict_bounds_log10[column_to_plot]
         ax.axhline(y=low_bound, ls="--", lw=3, color="gray", alpha=0.3)
         ax.axhline(y=high_bound, ls="--", lw=3, color="gray", alpha=0.3)
-    elif column_to_plot.startswith("D"):
-        low_bound, high_bound = dict_bounds[column_to_plot]
-        ax.axhline(y=low_bound, ls="--", lw=3, color="gray", alpha=0.3)
-        ax.axhline(y=high_bound, ls="--", lw=3, color="gray", alpha=0.3)
+    # elif column_to_plot.startswith("D"):
+    #     low_bound, high_bound = dict_bounds[column_to_plot]
+    #     ax.axhline(y=low_bound, ls="--", lw=3, color="gray", alpha=0.3)
+    #     ax.axhline(y=high_bound, ls="--", lw=3, color="gray", alpha=0.3)
     plt.ylabel(ylabel, weight="bold")
     ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
     plt.xlabel("")
@@ -102,6 +102,6 @@ box_strip_plot("F_fast", "Fraction Fast")
 box_strip_plot("log10D_static", r"Apparent log$_{10}$D Static")
 box_strip_plot("log10D_slow", r"Apparent log$_{10}$D Slow")
 box_strip_plot("log10D_fast", r"Apparent log$_{10}$D Fast")
-box_strip_plot("D_static", "Apparent D Static")
-box_strip_plot("D_slow", "Apparent D Slow")
-box_strip_plot("D_fast", "Apparent D Fast")
+# box_strip_plot("D_static", "Apparent D Static")
+# box_strip_plot("D_slow", "Apparent D Slow")
+# box_strip_plot("D_fast", "Apparent D Fast")
