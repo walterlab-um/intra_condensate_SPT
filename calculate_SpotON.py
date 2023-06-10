@@ -14,6 +14,7 @@ os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
 lst_fname = [f for f in os.listdir(".") if f.startswith("SPT_results_AIO")]
 # Displacement threshold for non static molecules
 threshold_disp = 0.2  # unit: um
+threshold_disp_switch = False
 # scalling factors
 um_per_pixel = 0.117
 s_per_frame = 0.02
@@ -35,6 +36,7 @@ columns = [
     "F_slow_SE",
     "F_static",
     "F_static_SE",
+    "params",
 ]
 
 #########################################
@@ -42,9 +44,9 @@ columns = [
 Frac_Bound_range = [0, 1]
 Frac_Fast_range = [0, 1]
 # Following bounds are designed based on saSPT results
-D_fast_range = [10 ** (-2.5), 10 ** (0)]
-D_med_range = [10 ** (-2.5), 10 ** (-1)]
-D_bound_range = [10 ** (-3.5), 10 ** (-2)]
+D_fast_range = [0.08, 1.6]
+D_med_range = [0.003, 0.08]
+D_bound_range = [10 ** (-5), 0.003]
 LB = [
     D_fast_range[0],
     D_med_range[0],
@@ -67,10 +69,12 @@ dZ = 0.7  # The axial illumination slice, um
 # Reformat and perform fitting
 def reformat_for_SpotON(df_in):
     # following format was interpreted from SpotON package
-    global threshold_disp, um_per_pixel, s_per_frame
+    global threshold_disp, um_per_pixel, s_per_frame, threshold_disp_switch
 
-    df_mobile = df_in[df_in["Displacement_um"] >= threshold_disp]
-    # df_mobile = df_in
+    if threshold_disp_switch:
+        df_mobile = df_in[df_in["Displacement_um"] >= threshold_disp]
+    else:
+        df_mobile = df_in
 
     SpotONinput = []
     for _, row in df_mobile.iterrows():
@@ -171,6 +175,7 @@ for fname in track(lst_fname):
                 F_slow_SE,
                 F_static,
                 F_static_SE,
+                params,
             ]
         )
 
