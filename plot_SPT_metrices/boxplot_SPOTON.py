@@ -10,7 +10,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 
 os.chdir(
-    "/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup/SPOTON_results"
+    "/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup/SPOTON_results_per_replicate"
 )
 df_plot = pd.read_csv("SPOTON_concat_all.csv")
 df_plot = df_plot[df_plot["N_tracks"] > 1000]
@@ -74,7 +74,7 @@ def box_strip_plot(column_to_plot, ylabel):
         x="key",
         y=column_to_plot,
         box_pairs=box_pairs,
-        test="Mann-Whitney",
+        test="t-test_welch",
         comparisons_correction=None,
         text_format="star",
         loc="inside",
