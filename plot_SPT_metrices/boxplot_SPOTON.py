@@ -17,10 +17,15 @@ df_plot = df_plot[df_plot["N_tracks"] > 1000]
 df_plot["log10D_fast"] = np.log10(df_plot["D_fast"])
 df_plot["log10D_slow"] = np.log10(df_plot["D_slow"])
 df_plot["log10D_static"] = np.log10(df_plot["D_static"])
-dict_bounds = {
+dict_bounds_log10 = {
     "log10D_fast": [np.log10(0.08), np.log10(1.6)],
     "log10D_slow": [np.log10(0.003), np.log10(0.08)],
     "log10D_static": [-5, np.log10(0.003)],
+}
+dict_bounds = {
+    "D_fast": [0.08, 1.6],
+    "D_slow": [0.003, 0.08],
+    "D_static": [10 ** (-5), 0.003],
 }
 box_pairs = [
     ("0Dex, -, 0h", "0Dex, -, 3h"),
@@ -49,7 +54,7 @@ dict_color_palette = {
 
 
 def box_strip_plot(column_to_plot, ylabel):
-    global df_plot, dict_color_palette, box_pairs
+    global df_plot, dict_color_palette, box_pairs, dict_bounds, dict_bounds_log10
     plt.figure(figsize=(8, 5), dpi=300)
     ax = sns.boxplot(
         data=df_plot,
@@ -76,6 +81,10 @@ def box_strip_plot(column_to_plot, ylabel):
         verbose=2,
     )
     if column_to_plot.startswith("log10D"):
+        low_bound, high_bound = dict_bounds_log10[column_to_plot]
+        ax.axhline(y=low_bound, ls="--", lw=3, color="gray", alpha=0.3)
+        ax.axhline(y=high_bound, ls="--", lw=3, color="gray", alpha=0.3)
+    elif column_to_plot.startswith("D"):
         low_bound, high_bound = dict_bounds[column_to_plot]
         ax.axhline(y=low_bound, ls="--", lw=3, color="gray", alpha=0.3)
         ax.axhline(y=high_bound, ls="--", lw=3, color="gray", alpha=0.3)
@@ -93,3 +102,6 @@ box_strip_plot("F_fast", "Fraction Fast")
 box_strip_plot("log10D_static", r"Apparent log$_{10}$D Static")
 box_strip_plot("log10D_slow", r"Apparent log$_{10}$D Slow")
 box_strip_plot("log10D_fast", r"Apparent log$_{10}$D Fast")
+box_strip_plot("D_static", "Apparent D Static")
+box_strip_plot("D_slow", "Apparent D Slow")
+box_strip_plot("D_fast", "Apparent D Fast")
