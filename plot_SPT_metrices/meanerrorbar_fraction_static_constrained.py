@@ -42,55 +42,28 @@ box_pairs = [
 ]
 
 
-plt.figure(figsize=(8, 6), dpi=300)
+plt.figure(figsize=(4, 6), dpi=300)
 data = df_plot[df_plot["variable"] == "Static Fraction"]
-ax = sns.boxplot(
+ax = sns.pointplot(
     data=data,
     x="label",
     y="value",
     palette=color_palette,
+    markers="_",
+    scale=2,
+    linestyles="",
+    errorbar="sd",
+    errwidth=2,
+    capsize=0.2,
 )
 ax = sns.stripplot(
     data=data,
     x="label",
     y="value",
-    color="0.4",
+    color="0.7",
+    size=3,
 )
-test_results = add_stat_annotation(
-    ax,
-    data=data,
-    x="label",
-    y="value",
-    box_pairs=box_pairs,
-    test="Mann-Whitney",
-    comparisons_correction="bonferroni",
-    text_format="star",
-    loc="inside",
-    verbose=2,
-)
-plt.title("Static Fraction per FOV", weight="bold")
-plt.ylabel(r"Static Fraction, $D < D_{localization \/ error}$", weight="bold")
-ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
-plt.xlabel("")
-plt.tight_layout()
-plt.savefig("boxplot_static_fraction_plus_stats.png", format="png")
-plt.close()
-
-
-plt.figure(figsize=(8, 6), dpi=300)
-data = df_plot[df_plot["variable"] == "Constrained Fraction"]
-ax = sns.boxplot(
-    data=data,
-    x="label",
-    y="value",
-    palette=color_palette,
-)
-ax = sns.stripplot(
-    data=data,
-    x="label",
-    y="value",
-    color="0.4",
-)
+plt.ylim(0, 1)
 test_results = add_stat_annotation(
     ax,
     data=data,
@@ -100,13 +73,56 @@ test_results = add_stat_annotation(
     test="t-test_welch",
     comparisons_correction=None,
     text_format="star",
-    loc="inside",
+    loc="outside",
     verbose=2,
 )
-plt.title("Constrained Fraction per FOV", weight="bold")
+# plt.title("Static Fraction per FOV", weight="bold")
+plt.ylabel(r"Static Fraction, $D < D_{localization \/ error}$", weight="bold")
+ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
+plt.xlabel("")
+plt.tight_layout()
+plt.savefig("boxplot_static_fraction.png", format="png")
+plt.close()
+
+
+plt.figure(figsize=(4, 6), dpi=300)
+data = df_plot[df_plot["variable"] == "Constrained Fraction"]
+ax = sns.pointplot(
+    data=data,
+    x="label",
+    y="value",
+    palette=color_palette,
+    markers="_",
+    scale=2,
+    linestyles="",
+    errorbar="sd",
+    errwidth=2,
+    capsize=0.2,
+)
+ax = sns.stripplot(
+    data=data,
+    x="label",
+    y="value",
+    color="0.7",
+    size=3,
+)
+plt.ylim(0, 1)
+test_results = add_stat_annotation(
+    ax,
+    data=data,
+    x="label",
+    y="value",
+    box_pairs=box_pairs,
+    test="t-test_welch",
+    comparisons_correction=None,
+    text_format="star",
+    loc="outside",
+    verbose=2,
+)
+# plt.title("Constrained Fraction per FOV", weight="bold")
 plt.ylabel(r"Constrained Fraction, $\alpha < 0.5$", weight="bold")
 ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
 plt.xlabel("")
 plt.tight_layout()
-plt.savefig("boxplot_constrained_fraction_plus_stats.png", format="png")
+plt.savefig("boxplot_constrained_fraction.png", format="png")
 plt.close()

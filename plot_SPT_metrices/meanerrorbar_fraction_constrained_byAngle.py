@@ -113,19 +113,27 @@ df_save = pd.DataFrame(
 df_save.to_csv("N_and_Fraction_per_FOV_byAngle.csv", index=False)
 
 
-plt.figure(figsize=(8, 5), dpi=300)
-ax = sns.boxplot(
+plt.figure(figsize=(4, 6), dpi=300)
+ax = sns.pointplot(
     data=df_save,
     x="label",
     y="Constrained Fraction, by Angle",
     palette=color_palette,
+    markers="_",
+    scale=2,
+    linestyles="",
+    errorbar="sd",
+    errwidth=2,
+    capsize=0.2,
 )
 ax = sns.stripplot(
     data=df_save,
     x="label",
     y="Constrained Fraction, by Angle",
-    color="0.4",
+    color="0.7",
+    size=3,
 )
+plt.ylim(0, 1)
 test_results = add_stat_annotation(
     ax,
     data=df_save,
@@ -135,10 +143,10 @@ test_results = add_stat_annotation(
     test="t-test_welch",
     comparisons_correction=None,
     text_format="star",
-    loc="inside",
+    loc="outside",
     verbose=2,
 )
-plt.title("Constrained Fraction per FOV, by Angle", weight="bold")
+# plt.title("Constrained Fraction per FOV, by Angle", weight="bold")
 plt.ylabel("Constrained Fraction, by Angle", weight="bold")
 ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
 plt.xlabel("")

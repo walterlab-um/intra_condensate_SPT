@@ -53,21 +53,36 @@ dict_color_palette = {
 }
 
 
-def box_strip_plot(column_to_plot, ylabel):
+def bar_strip_plot(column_to_plot, ylabel):
     global df_plot, dict_color_palette, box_pairs, dict_bounds, dict_bounds_log10
-    plt.figure(figsize=(8, 5), dpi=300)
-    ax = sns.boxplot(
+    plt.figure(figsize=(4, 6), dpi=300)
+    ax = sns.pointplot(
         data=df_plot,
         x="key",
         y=column_to_plot,
         palette=dict_color_palette,
+        markers="_",
+        scale=2,
+        linestyles="",
+        errorbar="sd",
+        errwidth=2,
+        capsize=0.2,
     )
     ax = sns.stripplot(
         data=df_plot,
         x="key",
         y=column_to_plot,
-        color="0.4",
+        color="0.7",
+        size=3,
     )
+
+    if column_to_plot.startswith("D_"):
+        low_bound, high_bound = dict_bounds[column_to_plot]
+        ax.axhline(y=low_bound, ls="--", lw=3, color="gray", alpha=0.3)
+        ax.axhline(y=high_bound, ls="--", lw=3, color="gray", alpha=0.3)
+    elif column_to_plot.startswith("F_"):
+        plt.ylim(0, 1)
+
     test_results = add_stat_annotation(
         ax,
         data=df_plot,
@@ -77,17 +92,9 @@ def box_strip_plot(column_to_plot, ylabel):
         test="t-test_welch",
         comparisons_correction=None,
         text_format="star",
-        loc="inside",
+        loc="outside",
         verbose=2,
     )
-    if column_to_plot.startswith("log10D"):
-        low_bound, high_bound = dict_bounds_log10[column_to_plot]
-        ax.axhline(y=low_bound, ls="--", lw=3, color="gray", alpha=0.3)
-        ax.axhline(y=high_bound, ls="--", lw=3, color="gray", alpha=0.3)
-    # elif column_to_plot.startswith("D"):
-    #     low_bound, high_bound = dict_bounds[column_to_plot]
-    #     ax.axhline(y=low_bound, ls="--", lw=3, color="gray", alpha=0.3)
-    #     ax.axhline(y=high_bound, ls="--", lw=3, color="gray", alpha=0.3)
     plt.ylabel(ylabel, weight="bold")
     ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
     plt.xlabel("")
@@ -96,12 +103,12 @@ def box_strip_plot(column_to_plot, ylabel):
     plt.close()
 
 
-box_strip_plot("F_static", "Fraction Static")
-box_strip_plot("F_slow", "Fraction Slow")
-box_strip_plot("F_fast", "Fraction Fast")
-box_strip_plot("log10D_static", r"Apparent log$_{10}$D Static")
-box_strip_plot("log10D_slow", r"Apparent log$_{10}$D Slow")
-box_strip_plot("log10D_fast", r"Apparent log$_{10}$D Fast")
-# box_strip_plot("D_static", "Apparent D Static")
-# box_strip_plot("D_slow", "Apparent D Slow")
-# box_strip_plot("D_fast", "Apparent D Fast")
+bar_strip_plot("F_static", "Fraction Static")
+bar_strip_plot("F_slow", "Fraction Slow")
+bar_strip_plot("F_fast", "Fraction Fast")
+bar_strip_plot("log10D_static", r"Apparent log$_{10}$D Static")
+bar_strip_plot("log10D_slow", r"Apparent log$_{10}$D Slow")
+bar_strip_plot("log10D_fast", r"Apparent log$_{10}$D Fast")
+bar_strip_plot("D_static", "Apparent D Static")
+bar_strip_plot("D_slow", "Apparent D Slow")
+bar_strip_plot("D_fast", "Apparent D Fast")
