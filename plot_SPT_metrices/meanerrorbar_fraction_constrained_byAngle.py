@@ -58,15 +58,18 @@ box_pairs = [
     ("10Dex, He, 0h", "10Dex, Sp, 0h"),
     ("10Dex, Ce, 0h", "10Dex, Sp, 0h"),
 ]
-
-lst_tag = []
-lst_FOVname = []
-lst_N_mobile = []
-lst_N_constrained = []
-lst_fraction_constrained = []
+# Output file structure
+columns = [
+    "label",
+    "replicate_prefix",
+    "N, Mobile",
+    "N, Constrained",
+    "Constrained Fraction, by Angle",
+]
+# construct output dataframe
+lst_rows_of_df = []
 for key in track(dict_input_path.keys()):
     df_current_file = pd.read_csv(dict_input_path[key])
-
     lst_keys = df_current_file.keys().tolist()
     df_current_file = df_current_file.astype(
         {
@@ -76,41 +79,48 @@ for key in track(dict_input_path.keys()):
             lst_keys[-1]: float,
         }
     )
-
+    # filter out static tracks
     df_longtracks = df_current_file[df_current_file["N_steps"] >= threshold_tracklength]
     df_mobile_byD = df_longtracks[
         df_longtracks["linear_fit_log10D"] >= threshold_log10D
     ]
     df_mobile = df_mobile_byD[df_mobile_byD["Displacement_um"] >= threshold_disp]
+    # all filenames within the current condition/file
+    all_filenames = df_mobile["filename"].unique().tolist()
+    # filename prefix for each replicate
+    replicate_prefixs = np.unique([f.split("FOV")[0] for f in all_filenames])
 
-    for FOVname in df_mobile.filename.unique():
-        df_currentFOV = df_mobile[df_mobile.filename == FOVname]
+    for prefix in replicate_prefixs:
+        current_replicate_filenames = [f for f in all_filenames if prefix in f]
+        df_current_replicate = df_mobile[
+            df_mobile["filename"].isin(current_replicate_filenames)
+        ]
 
-        N_mobile = df_currentFOV.shape[0]
+        N_mobile = df_current_replicate.shape[0]
         N_constrained = np.sum(
-            df_currentFOV[lst_keys[-1]].to_numpy() > threshold_last_bin_probability
+            df_current_replicate[lst_keys[-1]].to_numpy()
+            > threshold_last_bin_probability
         )
 
         fraction_constrained = N_constrained / N_mobile
 
-        lst_tag.append(key)
-        lst_FOVname.append(FOVname)
-        lst_N_mobile.append(N_mobile)
-        lst_N_constrained.append(N_constrained)
-        lst_fraction_constrained.append(fraction_constrained)
+        # save
+        lst_rows_of_df.append(
+            [
+                key,
+                prefix,
+                N_mobile,
+                N_constrained,
+                fraction_constrained,
+            ]
+        )
 
 
-df_save = pd.DataFrame(
-    {
-        "label": lst_tag,
-        "FOVname": lst_FOVname,
-        "N, Mobile": lst_N_mobile,
-        "N, Constrained, by Angle": lst_N_constrained,
-        "Constrained Fraction, by Angle": lst_fraction_constrained,
-    },
-    dtype=None,
+df_save = pd.DataFrame.from_records(
+    lst_rows_of_df,
+    columns=columns,
 )
-df_save.to_csv("N_and_Fraction_per_FOV_byAngle.csv", index=False)
+df_save.to_csv("N_and_Fraction_per_replicate_byAngle.csv", index=False)
 
 
 plt.figure(figsize=(4, 6), dpi=300)
