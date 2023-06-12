@@ -30,13 +30,10 @@ dict_input_path = {
     "10Dex, Sp, 0h": "SPT_results_AIO-10Dex_Spinal_0h.csv",
 }
 # calculate error bounds
-um_per_pixel = 0.117
 s_per_frame = 0.02
 static_err = 0.016
-um_per_pxl = 0.117
-link_max = 3
-log10D_low = np.log10(static_err**2 / (4 * (s_per_frame)))
-log10D_high = np.log10((um_per_pxl * link_max) ** 2 / (4 * (s_per_frame)))
+# log10D_low = np.log10(static_err**2 / (4 * (s_per_frame)))
+log10D_low = -3
 
 # Output file structure
 columns = [
