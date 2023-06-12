@@ -28,7 +28,7 @@ dict_condition_prefix = {
 }
 # Output file structure
 columns = [
-    "condition",
+    "key",
     "replicate_prefix",
     "F_static",
     "log10D_peaks",
