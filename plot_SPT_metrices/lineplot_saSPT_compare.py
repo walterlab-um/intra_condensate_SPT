@@ -22,7 +22,7 @@ lst_compare_pairs = [
 os.chdir(
     "/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup/saSPT_pooled"
 )
-plot_xlim = [-1.5, 0]
+plot_xlim = [-2, 0]
 
 color_palette = [
     "#001219",
@@ -96,10 +96,17 @@ for i in track(range(len(lst_compare_pairs))):
 
         # find peaks
         log10D = df_toplot["log10D"].to_numpy(dtype=float)
-        prabability = df_toplot["Probability"].to_numpy(dtype=float)
-        peaks_idx, _ = find_peaks(prabability)
+        proportion = df_toplot["Probability"].to_numpy(dtype=float)
+        peaks_idx, _ = find_peaks(proportion)
         for x in log10D[peaks_idx]:
-            plt.axvline(x, color=color_palette[color_idx], ls="--")
+            plt.plot(
+                log10D[peaks_idx],
+                proportion[peaks_idx],
+                "*",
+                color=color_palette[color_idx],
+                markersize=10,
+            )
+            plt.axvline(x, color=color_palette[color_idx], ls="--", lw=1, alpha=0.3)
 
     # plt.xlim(df_toplot["log10D"].iloc[0], df_toplot["log10D"].iloc[-1])
     plt.xlim(plot_xlim[0], plot_xlim[1])
