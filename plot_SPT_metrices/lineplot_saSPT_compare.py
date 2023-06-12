@@ -2,6 +2,7 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from scipy.signal import find_peaks
 import seaborn as sns
 from rich.progress import track
 
@@ -18,8 +19,10 @@ lst_compare_pairs = [
     ("10Dex, He, 0h", "10Dex, Ce, 0h", "10Dex, Sp, 0h"),
 ]
 
-os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
-probability_upper_limit = 0.03
+os.chdir(
+    "/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup/saSPT_pooled"
+)
+plot_xlim = [-1.5, 0]
 
 color_palette = [
     "#001219",
@@ -81,6 +84,7 @@ for i in track(range(len(lst_compare_pairs))):
         df_current_file = pd.read_csv(dict_input_path[key], dtype=float)
 
         df_toplot = extract_log10D_density(df_current_file)
+        df_toplot = df_toplot[df_toplot["log10D"] > plot_xlim[0]]
 
         sns.lineplot(
             data=df_toplot,
@@ -89,11 +93,19 @@ for i in track(range(len(lst_compare_pairs))):
             color=color_palette[color_idx],
             label=key,
         )
-    plt.xlim(df_toplot["log10D"].iloc[0], df_toplot["log10D"].iloc[-1])
-    plt.ylim(0, probability_upper_limit)
+
+        # find peaks
+        log10D = df_toplot["log10D"].to_numpy(dtype=float)
+        prabability = df_toplot["Probability"].to_numpy(dtype=float)
+        peaks_idx, _ = find_peaks(prabability)
+        for x in log10D[peaks_idx]:
+            plt.axvline(x, color=color_palette[color_idx], ls="--")
+
+    # plt.xlim(df_toplot["log10D"].iloc[0], df_toplot["log10D"].iloc[-1])
+    plt.xlim(plot_xlim[0], plot_xlim[1])
     plt.xlabel(r"log$_{10}$D, $\mu$m$^2$/s", weight="bold")
-    plt.ylabel("Probability", weight="bold")
-    plt.legend(ncol=2, fontsize=11)
+    plt.ylabel("Proportion", weight="bold")
+    plt.legend(fontsize=11)
     plt.tight_layout()
     plt.savefig("saSPT_compare-" + str(i) + "_pleaserename.png", format="png")
     plt.close()
