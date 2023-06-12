@@ -100,6 +100,11 @@ for fname in lst_fname:
             df_AIO["filename"].isin(current_replicate_filenames)
         ]
 
+        # skip if the dataset is too small
+        if df_current_replicate.shape[0] < 1000:
+            print("Dataset skip: N_tracks = ", df_current_replicate.shape[0])
+            continue
+
         df_saSPT_input = reformat_for_saSPT(df_current_replicate)
         print("Done reformatting: ", fname[16:-4], "\n", prefix[:-1])
 
