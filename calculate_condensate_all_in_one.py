@@ -11,7 +11,6 @@ from rich.progress import track
 pd.options.mode.chained_assignment = None  # default='warn'
 
 um_per_pixel = 0.117
-kernel_size = 3  # opening operation circular kernel size
 print("Choose the RNA AveProj_Simple Segmentation.tif files for processing:")
 lst_fpath = list(fd.askopenfilenames())
 folder_save = dirname(lst_fpath[0])
@@ -81,6 +80,14 @@ def get_circular_kernel(diameter):
     return kernel
 
 
+def cnt_to_list(cnt):
+    # convert cv2's cnt format to list of corrdinates, for the ease of saving in one dataframe cell
+    cnt_2d = np.reshape(cnt, (cnt.shape[0], cnt.shape[2]))
+    lst_cnt = [cnt_2d[i, :].tolist() for i in range(cnt_2d.shape[0])]
+
+    return lst_cnt
+
+
 lst_rows_of_df = []
 print("Now Processing:", dirname(lst_fpath[0]))
 for fpath in track(lst_fpath):
@@ -92,11 +99,6 @@ for fpath in track(lst_fpath):
     if mask_all_condensates.sum() == 0:  # so no condensate
         continue
 
-    # perform morphology transform to seperate falsely connected condensates
-    kernel = get_circular_kernel(kernel_size)
-    mask_all_condensates = cv2.morphologyEx(
-        mask_all_condensates, cv2.MORPH_OPEN, kernel
-    )
     # find contours coordinates in binary edge image. contours here is a list of np.arrays containing all coordinates of each individual edge/contour.
     contours, _ = cv2.findContours(
         mask_all_condensates, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE
@@ -137,7 +139,7 @@ for fpath in track(lst_fpath):
         new_row = [
             filename,
             condensateID,
-            cnt,
+            cnt_to_list(cnt),
             center_x_pxl,
             center_y_pxl,
             area_um2,
