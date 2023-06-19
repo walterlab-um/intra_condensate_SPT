@@ -59,6 +59,8 @@ df_all = pd.concat(lst_df)
 df_all.to_csv("condensate_concat_all.csv", index=False)
 
 
+#####################################
+# Section 1: Condensate Properties
 def hist_lineplot(column_name):
     global df_all, color_palette, box_pairs
     plt.figure(figsize=(6, 4), dpi=300)
@@ -73,7 +75,7 @@ def hist_lineplot(column_name):
         clip=(0, quantile),
     )
     plt.xlabel(column_name, weight="bold")
-    plt.ylabel("Density", weight="bold")
+    plt.ylabel("Probability Density", weight="bold")
     sns.move_legend(
         ax,
         "lower center",
@@ -90,3 +92,7 @@ def hist_lineplot(column_name):
 
 hist_lineplot("R_nm")
 hist_lineplot("mean_intensity")
+hist_lineplot("aspect_ratio")
+
+#####################################
+# Section 1: Condensate Properties
