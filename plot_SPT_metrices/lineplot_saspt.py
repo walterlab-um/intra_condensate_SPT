@@ -10,7 +10,7 @@ sns.set(color_codes=True, style="white")
 
 # plot all replicates in a single condition
 os.chdir(
-    "/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup/saSPT_per_replicate"
+    "/Volumes/AnalysisGG/PROCESSED_DATA/RNA-diffusion-in-FUS/RNA_SPT_in_FUS-May2023_wrapup/saSPT_per_replicate"
 )
 plot_xlim = [-2, 0]
 
@@ -81,7 +81,10 @@ for key in track(lst_keys):
         # find peaks
         log10D = df_toplot["log10D"].to_numpy(dtype=float)
         proportion = df_toplot["Probability"].to_numpy(dtype=float)
-        peaks_idx, _ = find_peaks(proportion)
+        # only find peaks that are separate more than delta_log10D > 0.5
+        peaks_idx, _ = find_peaks(
+            proportion, distance=int(0.5 / (log10D[1] - log10D[0]))
+        )
         for x in log10D[peaks_idx]:
             plt.plot(
                 log10D[peaks_idx],

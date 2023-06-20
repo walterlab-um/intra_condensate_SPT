@@ -10,7 +10,7 @@ sns.set(color_codes=True, style="white")
 
 # plot all replicates in a single condition
 os.chdir(
-    "/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup/saSPT_per_replicate"
+    "/Volumes/AnalysisGG/PROCESSED_DATA/RNA-diffusion-in-FUS/RNA_SPT_in_FUS-May2023_wrapup/saSPT_per_replicate"
 )
 static_threshold_log10D = -2
 
@@ -72,7 +72,10 @@ for key in track(lst_keys):
         # find peaks in only mobile fraction
         proportion_mobile = proportion[log10D >= static_threshold_log10D]
         log10D_mobile = log10D[log10D >= static_threshold_log10D]
-        peaks_idx, _ = find_peaks(proportion_mobile)
+        # only find peaks that are separate more than delta_log10D > 0.5
+        peaks_idx, _ = find_peaks(
+            proportion_mobile, distance=int(0.5 / (log10D_mobile[1] - log10D_mobile[0]))
+        )
         log10D_peaks = log10D_mobile[peaks_idx]
 
         # save
