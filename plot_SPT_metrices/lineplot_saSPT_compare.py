@@ -97,7 +97,6 @@ for i in track(range(len(lst_compare_pairs))):
         # find peaks
         log10D = df_toplot["log10D"].to_numpy(dtype=float)
         proportion = df_toplot["Probability"].to_numpy(dtype=float)
-        print(int(0.5 / (log10D[1] - log10D[0])))
         # only find peaks that are separate more than delta_log10D > 0.5
         peaks_idx, _ = find_peaks(
             proportion, distance=int(0.5 / (log10D[1] - log10D[0]))
