@@ -50,34 +50,87 @@ box_pairs = [
     ("10Dex, Ce, 0h", "10Dex, Sp, 0h"),
 ]
 
-# concat all csv files
-lst_df = []
-for key in dict_input_path.keys():
-    df = pd.read_csv(dict_input_path[key])
-    df.insert(0, "key", np.repeat(key, df.shape[0]))
-    lst_df.append(df)
+## Exctra per-FOV metrics and mean within each replicate
+# Output file structure
+columns = [
+    "label",
+    "replicate_prefix",
+    "Mean Area, um^2",
+    "Mean Radius, nm",
+    "Mean Intensity",
+    "Mean Aspect Ratio",
+    "Mean Solidity",
+    "Mean Extent",
+]
+lst_rows_of_df = []
+for key in track(dict_input_path.keys()):
+    df_current_file = pd.read_csv(dict_input_path[key])
+    df_current_file = df_current_file.astype(
+        {
+            "area_um2": float,
+            "R_nm": float,
+            "mean_intensity": float,
+            "aspect_ratio": float,
+            "contour_solidity": float,
+            "contour_extent": float,
+        }
+    )
+    # all filenames within the current condition/file
+    all_filenames = df_current_file["filename"].unique().tolist()
+    # filename prefix for each replicate
+    replicate_prefixs = np.unique([f.split("FOV")[0] for f in all_filenames])
+    for prefix in replicate_prefixs:
+        current_replicate_filenames = [f for f in all_filenames if prefix in f]
+        df_current_replicate = df_current_file[
+            df_current_file["filename"].isin(current_replicate_filenames)
+        ]
 
-df_all = pd.concat(lst_df)
-df_all.to_csv("condensate_concat_all.csv", index=False)
+        # save
+        lst_rows_of_df.append(
+            [
+                key,
+                prefix,
+                df_current_replicate["area_um2"].mean(),
+                df_current_replicate["R_nm"].mean(),
+                df_current_replicate["mean_intensity"].mean(),
+                df_current_replicate["aspect_ratio"].mean(),
+                df_current_replicate["contour_solidity"].mean(),
+                df_current_replicate["contour_extent"].mean(),
+            ]
+        )
+
+
+df_save = pd.DataFrame.from_records(
+    lst_rows_of_df,
+    columns=columns,
+)
+df_save.to_csv("condensate_all_per_replicate.csv", index=False)
 
 
 def mean_errobar_stats(column_name):
-    global df_all, color_palette, box_pairs
+    global df_save, color_palette, box_pairs
     plt.figure(figsize=(4, 6), dpi=300)
-    ax = sns.violinplot(
-        data=df_all,
-        x="key",
+    # ax = sns.violinplot(
+    #     data=df_save,
+    #     x="label",
+    #     y=column_name,
+    #     color="lightgray",
+    #     linewidth=0.5,
+    #     width=1,
+    #     cut=0,
+    #     saturation=0.3,
+    #     inner=None,
+    # )
+    ax = sns.stripplot(
+        data=df_save,
+        x="label",
         y=column_name,
-        color="lightgray",
-        linewidth=0.5,
-        width=1,
-        cut=0,
-        saturation=0.3,
-        inner=None,
+        color="0.7",
+        size=3,
     )
     sns.pointplot(
-        data=df_all,
-        x="key",
+        data=df_save,
+        x="label",
         y=column_name,
         palette=color_palette,
         markers="_",
@@ -90,8 +143,8 @@ def mean_errobar_stats(column_name):
     )
     test_results = add_stat_annotation(
         ax,
-        data=df_all,
-        x="key",
+        data=df_save,
+        x="label",
         y=column_name,
         box_pairs=box_pairs,
         test="t-test_welch",
@@ -100,16 +153,17 @@ def mean_errobar_stats(column_name):
         loc="outside",
         verbose=2,
     )
-    # plt.title("Constrained Fraction per FOV, by Angle", weight="bold")
     plt.ylabel(column_name, weight="bold")
     ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
     plt.xlabel("")
-    plt.tight_layout()
+    plt.gca().set_ylim(bottom=0)
     fname_save = "Condensate_" + column_name + ".png"
+    plt.tight_layout()
     plt.savefig(fname_save, format="png")
     plt.close()
 
 
-# mean_errobar_stats("area_um2")
-mean_errobar_stats("R_nm")
-mean_errobar_stats("mean_intensity")
+mean_errobar_stats("Mean Area, um^2")
+mean_errobar_stats("Mean Radius, nm")
+mean_errobar_stats("Mean Intensity")
+mean_errobar_stats("Mean Aspect Ratio")
