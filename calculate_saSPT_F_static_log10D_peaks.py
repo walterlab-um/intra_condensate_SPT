@@ -79,14 +79,15 @@ for key in track(lst_keys):
         log10D_peaks = log10D_mobile[peaks_idx]
 
         # save
-        lst_rows_of_df.append(
-            [
-                key,
-                fname,
-                F_static,
-                log10D_peaks,
-            ]
-        )
+        for peak in log10D_peaks:
+            lst_rows_of_df.append(
+                [
+                    key,
+                    fname,
+                    F_static,
+                    peak,
+                ]
+            )
 
 df_save = pd.DataFrame.from_records(
     lst_rows_of_df,
