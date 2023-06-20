@@ -61,6 +61,8 @@ columns = [
     "Mean Aspect Ratio",
     "Mean Solidity",
     "Mean Extent",
+    "Mean N per FOV",
+    "Mean Volume Fraction",
 ]
 lst_rows_of_df = []
 for key in track(dict_input_path.keys()):
@@ -85,17 +87,40 @@ for key in track(dict_input_path.keys()):
             df_current_file["filename"].isin(current_replicate_filenames)
         ]
 
+        mean_area = df_current_replicate["area_um2"].mean()
+        mean_R = df_current_replicate["R_nm"].mean()
+        mean_intensity = df_current_replicate["mean_intensity"].mean()
+        mean_aspect_ratio = df_current_replicate["aspect_ratio"].mean()
+        mean_solidity = df_current_replicate["contour_solidity"].mean()
+        mean_extent = df_current_replicate["contour_extent"].mean()
+
+        # per FOV metrics
+        lst_N_per_FOV = []
+        lst_vol_frac = []
+        for fname in df_current_replicate["filename"].unique():
+            df_current_FOV = df_current_replicate[
+                df_current_replicate["filename"] == fname
+            ]
+            lst_N_per_FOV.append(df_current_FOV.shape[0])
+            lst_vol_frac.append(
+                df_current_FOV["area_um2"].sum() / (418 * 674 * (0.117**2))
+            )
+        mean_N_per_FOV = np.mean(lst_N_per_FOV)
+        mean_vol_frac = np.mean(lst_vol_frac)
+
         # save
         lst_rows_of_df.append(
             [
                 key,
                 prefix,
-                df_current_replicate["area_um2"].mean(),
-                df_current_replicate["R_nm"].mean(),
-                df_current_replicate["mean_intensity"].mean(),
-                df_current_replicate["aspect_ratio"].mean(),
-                df_current_replicate["contour_solidity"].mean(),
-                df_current_replicate["contour_extent"].mean(),
+                mean_area,
+                mean_R,
+                mean_intensity,
+                mean_aspect_ratio,
+                mean_solidity,
+                mean_extent,
+                mean_N_per_FOV,
+                mean_vol_frac,
             ]
         )
 
@@ -167,3 +192,5 @@ mean_errobar_stats("Mean Area, um^2")
 mean_errobar_stats("Mean Radius, nm")
 mean_errobar_stats("Mean Intensity")
 mean_errobar_stats("Mean Aspect Ratio")
+mean_errobar_stats("Mean N per FOV")
+mean_errobar_stats("Mean Volume Fraction")
