@@ -10,7 +10,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 
 os.chdir(
-    "/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup/saSPT_per_replicate"
+    "/Volumes/AnalysisGG/PROCESSED_DATA/RNA-diffusion-in-FUS/RNA_SPT_in_FUS-May2023_wrapup/saSPT_per_replicate"
 )
 df_plot = pd.read_csv("saSPT_F_static_log10D_peaks_all.csv")
 
@@ -40,54 +40,63 @@ dict_color_palette = {
 }
 
 
-def bar_strip_plot(column_to_plot, ylabel):
-    global df_plot, dict_color_palette, box_pairs, dict_bounds, dict_bounds_log10
-    plt.figure(figsize=(4, 6), dpi=300)
-    ax = sns.pointplot(
-        data=df_plot,
-        x="key",
-        y=column_to_plot,
-        palette=dict_color_palette,
-        markers="_",
-        scale=2,
-        linestyles="",
-        errorbar="sd",
-        errwidth=2,
-        capsize=0.2,
-    )
-    ax = sns.stripplot(
-        data=df_plot,
-        x="key",
-        y=column_to_plot,
-        color="0.7",
-        size=3,
-    )
+##################################
+# Plot F static
+plt.figure(figsize=(4, 6), dpi=300)
+ax = sns.pointplot(
+    data=df_plot,
+    x="key",
+    y="F_static",
+    palette=dict_color_palette,
+    markers="_",
+    scale=2,
+    linestyles="",
+    errorbar="sd",
+    errwidth=2,
+    capsize=0.2,
+)
+ax = sns.stripplot(
+    data=df_plot,
+    x="key",
+    y="F_static",
+    color="0.7",
+    size=3,
+)
 
-    if column_to_plot.startswith("D_"):
-        low_bound, high_bound = dict_bounds[column_to_plot]
-        ax.axhline(y=low_bound, ls="--", lw=3, color="gray", alpha=0.3)
-        ax.axhline(y=high_bound, ls="--", lw=3, color="gray", alpha=0.3)
-    elif column_to_plot.startswith("F_"):
-        plt.ylim(0, 1)
+plt.ylim(0, 1)
 
-    test_results = add_stat_annotation(
-        ax,
-        data=df_plot,
-        x="key",
-        y=column_to_plot,
-        box_pairs=box_pairs,
-        test="t-test_welch",
-        comparisons_correction=None,
-        text_format="star",
-        loc="outside",
-        verbose=2,
-    )
-    plt.ylabel(ylabel, weight="bold")
-    ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
-    plt.xlabel("")
-    plt.tight_layout()
-    plt.savefig(column_to_plot + ".png", format="png")
-    plt.close()
+test_results = add_stat_annotation(
+    ax,
+    data=df_plot,
+    x="key",
+    y="F_static",
+    box_pairs=box_pairs,
+    test="t-test_welch",
+    comparisons_correction=None,
+    text_format="star",
+    loc="outside",
+    verbose=2,
+)
+plt.ylabel("Fraction Static", weight="bold")
+ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
+plt.xlabel("")
+plt.tight_layout()
+plt.savefig("F_static_by_saSPT.png", format="png")
+plt.close()
 
-
-bar_strip_plot("F_static", "Fraction Static")
+##################################
+# Plot Peaks
+plt.figure(figsize=(4, 6), dpi=300)
+ax = sns.stripplot(
+    data=df_plot,
+    x="key",
+    y="log10D_peaks",
+    palette=dict_color_palette,
+    size=3,
+)
+plt.ylabel("saSPT Peak Position", weight="bold")
+ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
+plt.xlabel("")
+plt.tight_layout()
+plt.savefig("saSPT_peak_position.png", format="png")
+plt.close()
