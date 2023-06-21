@@ -40,6 +40,7 @@ columns = [
     "Displacement_um",
     "mean_x_pxl",
     "mean_y_pxl",
+    "mean_spot_intensity_max_in_track",
     "list_of_MSD_um2",
     "list_of_tau_s",
     "linear_fit_slope",
@@ -124,38 +125,16 @@ for fpath in track(lst_fpath):
         if tracklength < tracklength_threshold:
             continue
 
-        new_row = []
-        # 1.'filename'
-        new_row.append(fname)
-        # 2.'trackID'
-        new_row.append(trackID)
-        # 3.'list_of_t'
-        new_row.append(df_current_track["t"].to_list())
-        # 4.'list_of_x'
         x = df_current_track["x"].to_numpy(dtype=float)
-        new_row.append(df_current_track["x"].to_list())
-        # 5.'list_of_y'
         y = df_current_track["y"].to_numpy(dtype=float)
-        new_row.append(df_current_track["y"].to_list())
-        # 6.'N_steps'
-        new_row.append(tracklength)
-        # 7.'Displacement_um'
         disp_um = np.sqrt((x[-1] - x[0]) ** 2 + (y[-1] - y[0]) ** 2) * um_per_pixel
-        new_row.append(disp_um)
-        # 8.'mean_x_pxl'
-        new_row.append(x.mean())
-        # 9.'mean_y_pxl'
-        new_row.append(y.mean())
-        # 10.'list_of_MSD_um2'
+
         lags = np.arange(1, tracklength - 2)
         lags_phys = lags * s_per_frame
         MSDs = calc_MSD_NonPhysUnit(df_current_track, lags)
         if np.any(MSDs == 0):  # remove any track with zero MSD
             continue
         MSDs_phys = MSDs * (um_per_pixel**2)  # um^2
-        new_row.append(MSDs_phys.tolist())
-        # 11.'list_of_tau_s'
-        new_row.append(lags_phys.tolist())
 
         # D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
         # diffusion dimension = 2. Note: This is the dimension of the measured data, not the actual movements! Although particles are doing 3D diffussion, the microscopy data is a projection on 2D plane and thus should be treated as 2D diffusion!
@@ -173,17 +152,6 @@ for fpath in track(lst_fpath):
             log10D_linear = np.NaN
             sigma_phys = np.NaN
 
-        # 12.'linear_fit_slope'
-        new_row.append(slope_linear)
-        # 13.'linear_fit_R2'
-        new_row.append(R_linear**2)
-        # 14.'linear_fit_sigma'
-        new_row.append(sigma_phys)
-        # 15.'linear_fit_D_um2s'
-        new_row.append(D_phys_linear)
-        # 16.'linear_fit_log10D'
-        new_row.append(log10D_linear)
-
         # MSD = 2 n D tau^alpha = 4 D tau^alpha
         # log(MSD) = alpha * log(tau) + log(D) + log(4)
         # Therefore, slope = alpha; intercept = log(D) + log(4)
@@ -194,24 +162,35 @@ for fpath in track(lst_fpath):
         log10D_loglog = intercept_loglog - np.log10(4)
         alpha = slope_loglog
 
-        # 17.'loglog_fit_R2'
-        new_row.append(R_loglog**2)
-        # 18.'loglog_fit_log10D'
-        new_row.append(log10D_loglog)
-        # 19.'alpha'
-        new_row.append(alpha)
-
         angles = calc_angle(x, y)
         densities, _ = np.histogram(np.absolute(angles), angle_bins, density=True)
         # fractions are summed to 1; fraction = density * bin width
         fractions = densities * (angle_bins[1] - angle_bins[0])
 
-        # 20.'list_of_angles'
-        new_row.append(angles.tolist())
-        # 21. angle fractions
-        new_row.extend(fractions.tolist())
-
-        # Finally, add the new row to the list to form dataframe
+        # Save
+        new_row = [
+            fname,
+            trackID,
+            df_current_track["t"].to_list(),
+            df_current_track["x"].to_list(),
+            df_current_track["y"].to_list(),
+            tracklength,
+            disp_um,
+            x.mean(),
+            y.mean(),
+            df_current_track["meanIntensity"].max(),  # max of mean spot intensity
+            MSDs_phys.tolist(),
+            lags_phys.tolist(),
+            slope_linear,
+            R_linear**2,
+            sigma_phys,
+            D_phys_linear,
+            log10D_linear,
+            R_loglog**2,
+            log10D_loglog,
+            alpha,
+            angles.tolist(),
+        ] + fractions.tolist()
         lst_rows_of_df.append(new_row)
 
 df_save = pd.DataFrame.from_records(
