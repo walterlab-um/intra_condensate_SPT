@@ -86,6 +86,37 @@ for fname_RNA_AIO in all_fname_RNA_AIO:
             lst_x = list_like_string_to_xyt(current_track["list_of_x"].squeeze())
             lst_y = list_like_string_to_xyt(current_track["list_of_y"].squeeze())
             lst_t = list_like_string_to_xyt(current_track["list_of_t"].squeeze())
+            mean_RNA_x = np.mean(lst_x)
+            mean_RNA_y = np.mean(lst_y)
+
+            # to save computation time, only search for condensates near the RNA
+            all_condensateID_nearby = []
+            for _, row in df_condensate_current_FOV.iterrows():
+                center_x_pxl = row["center_x_pxl"]
+                center_y_pxl = row["center_y_pxl"]
+                if (center_x_pxl - mean_RNA_x) ** 2 + (
+                    center_y_pxl - mean_RNA_y
+                ) ** 2 > 50**2:
+                    continue
+                else:
+                    all_condensateID_nearby.append(row["condensateID"])
+
+            dict_condensate_polygons_nearby = dict()
+            for condensateID_nearby in all_condensateID_nearby:
+                str_condensate_coords = df_condensate_current_FOV[
+                    df_condensate_current_FOV["condensateID"] == condensateID_nearby
+                ]["contour_coord"].squeeze()
+
+                lst_tup_condensate_coords = []
+                for str_condensate_xy in str_condensate_coords[2:-2].split("], ["):
+                    condensate_x, condensate_y = str_condensate_xy.split(", ")
+                    lst_tup_condensate_coords.append(
+                        tuple([int(condensate_x), int(condensate_y)])
+                    )
+
+                dict_condensate_polygons_nearby[condensateID_nearby] = Polygon(
+                    lst_tup_condensate_coords
+                )
 
             # process each position in track one by one
             for i in range(len(lst_t)):
@@ -94,35 +125,6 @@ for fname_RNA_AIO in all_fname_RNA_AIO:
                 y = lst_y[i]
 
                 point_RNA = Point(x, y)
-
-                # to save computation time, only search for condensates near the RNA
-                all_condensateID_nearby = []
-                for _, row in df_condensate_current_FOV.iterrows():
-                    center_x_pxl = row["center_x_pxl"]
-                    center_y_pxl = row["center_y_pxl"]
-                    if np.abs(center_x_pxl - x) > 50:
-                        break
-                    elif np.abs(center_y_pxl - y) > 50:
-                        break
-                    else:
-                        all_condensateID_nearby.append(row["condensateID"])
-
-                dict_condensate_polygons_nearby = dict()
-                for condensateID_nearby in all_condensateID_nearby:
-                    str_condensate_coords = df_condensate_current_FOV[
-                        df_condensate_current_FOV["condensateID"] == condensateID_nearby
-                    ]["contour_coord"].squeeze()
-
-                    lst_tup_condensate_coords = []
-                    for str_condensate_xy in str_condensate_coords[2:-2].split("], ["):
-                        condensate_x, condensate_y = str_condensate_xy.split(", ")
-                        lst_tup_condensate_coords.append(
-                            tuple([int(condensate_x), int(condensate_y)])
-                        )
-
-                    dict_condensate_polygons_nearby[condensateID_nearby] = Polygon(
-                        lst_tup_condensate_coords
-                    )
 
                 ## Perform colocalization
                 # search for which condensate it's in
