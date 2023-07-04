@@ -79,7 +79,7 @@ for fname_RNA_AIO in all_fname_RNA_AIO:
         df_RNA_current_FOV = df_RNA[df_RNA["filename"] == fname_FOV]
         # load condensates near the RNA as dictionary of polygons
         df_condensate_current_FOV = df_condensate[
-            df_condensate["filename"].str.startswith(fname_FOV.split("RNA")[0])
+            df_condensate["filename"].str.startswith(fname_FOV[:-27] + "condensates")
         ]
         for trackID in df_RNA_current_FOV["trackID"].unique():
             current_track = df_RNA_current_FOV[df_RNA_current_FOV["trackID"] == trackID]
