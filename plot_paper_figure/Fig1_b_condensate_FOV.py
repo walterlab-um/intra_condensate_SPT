@@ -1,12 +1,10 @@
 from tifffile import imread
 import os
-from os.path import join, dirname, basename
+from os.path import dirname
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from tkinter import filedialog as fd
-from rich.progress import track
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -17,7 +15,8 @@ os.chdir(folder_save)
 
 plow = 0.5  # imshow intensity percentile
 phigh = 85
-linecolor = "#00274C"
+line_color = "#00274C"
+scalebar_color = "#FFA000"
 
 # scale bar
 scalebar_length_um = 5
@@ -45,14 +44,14 @@ plt.imshow(img, cmap="Blues", vmin=vmin, vmax=vmax)
 for cnt in contours:
     x = cnt[:, 0][:, 0]
     y = cnt[:, 0][:, 1]
-    plt.plot(x, y, "-", color=linecolor, linewidth=2)
+    plt.plot(x, y, "-", color=line_color, linewidth=2)
     # still the last closing line will be missing, get it below
     xlast = [x[-1], x[0]]
     ylast = [y[-1], y[0]]
-    plt.plot(xlast, ylast, "-", color=linecolor, linewidth=2)
+    plt.plot(xlast, ylast, "-", color=line_color, linewidth=2)
 plt.xlim(0, img.shape[0])
 plt.ylim(0, img.shape[1])
-plt.plot([10, 10 + scalebar_length_pxl], [10, 10], "-", color="black", lw=7)
+plt.plot([10, 10 + scalebar_length_pxl], [10, 10], "-", color=scalebar_color, lw=7)
 plt.axis("scaled")
 plt.axis("off")
 plt.savefig("Fig1_b_condensate_FOV.png", format="png", bbox_inches="tight", dpi=600)
