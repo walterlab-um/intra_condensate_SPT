@@ -22,7 +22,8 @@ dir_from = "/Volumes/AnalysisGG/PROCESSED_DATA/RNA-diffusion-in-FUS/RNA_SPT_in_F
 
 # Output file columns
 columns = [
-    "fname_FOV",
+    "fname_RNA",
+    "fname_condensate",
     "RNA_trackID",
     "t",
     "x",
@@ -75,12 +76,15 @@ for fname_RNA_AIO in all_fname_RNA_AIO:
 
     ## process RNA tracks one by one
     lst_rows_of_df = []
-    for fname_FOV in track(df_RNA["filename"].unique(), description=fname_RNA_AIO):
-        df_RNA_current_FOV = df_RNA[df_RNA["filename"] == fname_FOV]
-        # load condensates near the RNA as dictionary of polygons
+    for fname_RNA in track(df_RNA["filename"].unique(), description=fname_RNA_AIO):
+        df_RNA_current_FOV = df_RNA[df_RNA["filename"] == fname_RNA]
+        keyword = (
+            fname_RNA[fname_RNA.find("FOV") - 3 : fname_RNA.find("RNA")] + "condensate"
+        )
         df_condensate_current_FOV = df_condensate[
-            df_condensate["filename"].str.startswith(fname_FOV[:-27] + "condensates")
+            df_condensate["filename"].str.contains(keyword)
         ]
+        # load condensates near the RNA as dictionary of polygons
         for trackID in df_RNA_current_FOV["trackID"].unique():
             current_track = df_RNA_current_FOV[df_RNA_current_FOV["trackID"] == trackID]
             lst_x = list_like_string_to_xyt(current_track["list_of_x"].squeeze())
@@ -150,7 +154,8 @@ for fname_RNA_AIO in all_fname_RNA_AIO:
 
                 # Save
                 new_row = [
-                    fname_FOV,
+                    fname_RNA,
+                    df_condensate_current_FOV["filename"].unique()[0],
                     trackID,
                     t,
                     x,
