@@ -134,7 +134,10 @@ for fname_RNA_AIO in all_fname_RNA_AIO:
                 # search for which condensate it's in
                 InCondensate = False
                 for key, polygon in dict_condensate_polygons_nearby.items():
-                    if point_RNA.within(polygon):
+                    # if point_RNA.within(polygon):
+                    if (
+                        distance(point_RNA, polygon) < 2
+                    ):  # redundancy: to include RNAs near boundary
                         InCondensate = True
                         condensateID = key
                         R_nm = np.sqrt(polygon.area * nm_per_pixel**2 / np.pi)
