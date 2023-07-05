@@ -11,7 +11,7 @@ from rich.progress import track
 pd.options.mode.chained_assignment = None  # default='warn'
 
 um_per_pixel = 0.117
-fpath = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig1_system design/b_condensate_FOV_w_inlet/20221031-FL_noTR_noDex_20ms_Replicate1_FOV-8-condensates_AveProj_Simple Segmentation.tif"
+fpath = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig1_system design/b_condensate_FOV/20221031-FL_noTR_noDex_20ms_Replicate1_FOV-8-condensates_AveProj_Simple Segmentation.tif"
 folder_save = dirname(fpath)
 os.chdir(folder_save)
 
