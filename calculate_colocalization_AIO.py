@@ -84,6 +84,10 @@ for fname_RNA_AIO in all_fname_RNA_AIO:
         df_condensate_current_FOV = df_condensate[
             df_condensate["filename"].str.contains(keyword)
         ]
+
+        if df_condensate_current_FOV.shape[0] == 0:
+            continue  # skip if there's no match
+
         # load condensates near the RNA as dictionary of polygons
         for trackID in df_RNA_current_FOV["trackID"].unique():
             current_track = df_RNA_current_FOV[df_RNA_current_FOV["trackID"] == trackID]
