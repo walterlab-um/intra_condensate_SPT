@@ -7,6 +7,10 @@ from rich.progress import track
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
+
+## Calculate all SPT properties posible (based on classical diffusion models) and store them together with the raw data in an AIO (all in one) format. One AIO file is saved for each individual input file.
+
+
 # scalling factors for physical units
 print("Default scaling factors: s_per_frame = 0.02, um_per_pixel = 0.117")
 # print("micron per pixel:")
