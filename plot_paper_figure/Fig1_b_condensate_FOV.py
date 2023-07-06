@@ -1,6 +1,5 @@
 from tifffile import imread
 import os
-from os.path import dirname
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,27 +8,28 @@ import pandas as pd
 pd.options.mode.chained_assignment = None  # default='warn'
 
 um_per_pixel = 0.117
-fpath = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig1_system design/b_condensate_FOV/20221031-FL_noTR_noDex_20ms_Replicate1_FOV-8-condensates_AveProj_Simple Segmentation.tif"
-folder_save = dirname(fpath)
+folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig1_system design/b_condensate_FOV/"
 os.chdir(folder_save)
 
+ilastik_output = imread(
+    "20221031-FL_noTR_noDex_20ms_0hr_Replicate3_FOV-8-condensates_AveProj_Simple Segmentation.tif"
+)
+img = imread("20221031-FL_noTR_noDex_20ms_0hr_Replicate3_FOV-8-condensates_AveProj.tif")
+
 plow = 0.5  # imshow intensity percentile
-phigh = 85
+phigh = 90
 line_color = "#00274C"
 # scalebar_color = "#FFA000"
 scalebar_color = "black"
 
 # full size: 418x674
-zoom_in_x = (140, 320)
-zoom_in_y = (140, 320)
+zoom_in_x = (80, 290)
+zoom_in_y = (100, 310)
 
 # scale bar
 scalebar_length_um = 5
 um_per_pixel = 0.117
 scalebar_length_pxl = scalebar_length_um / um_per_pixel
-
-ilastik_output = imread(fpath)
-img = imread(fpath[:-24] + ".tif")
 
 # Cropping
 ilastik_output = ilastik_output[
