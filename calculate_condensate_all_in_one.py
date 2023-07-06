@@ -10,6 +10,9 @@ from rich.progress import track
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
+
+## Calculate all condensate properties posible and store them together with the raw data in an AIO (all in one) format. One AIO file is saved for each individual input file.
+
 um_per_pixel = 0.117
 print("Choose the RNA AveProj_Simple Segmentation.tif files for processing:")
 lst_fpath = list(fd.askopenfilenames())
@@ -18,7 +21,6 @@ os.chdir(folder_save)
 
 # output data structure
 columns = [
-    "filename",
     "condensateID",
     "contour_coord",
     "center_x_pxl",
@@ -88,7 +90,6 @@ def cnt_to_list(cnt):
     return lst_cnt
 
 
-lst_rows_of_df = []
 print("Now Processing:", dirname(lst_fpath[0]))
 for fpath in track(lst_fpath):
     ilastik_output = imread(fpath)
@@ -104,6 +105,8 @@ for fpath in track(lst_fpath):
         mask_all_condensates, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE
     )
     condensateID = 1
+
+    lst_rows_of_df = []
     for cnt in contours:
         # ignore contour if it's as large as the FOV, becuase cv2 recognizes the whole image as a contour
         if cv2.contourArea(cnt) > 0.8 * img.shape[0] * img.shape[1]:
@@ -160,9 +163,9 @@ for fpath in track(lst_fpath):
     else:
         continue
 
-df_save = pd.DataFrame.from_records(
-    lst_rows_of_df,
-    columns=columns,
-)
-fname_save = join(dirname(fpath), "condensates_AIO-pleaserename.csv")
-df_save.to_csv(fname_save, index=False)
+    df_save = pd.DataFrame.from_records(
+        lst_rows_of_df,
+        columns=columns,
+    )
+    fname_save = join(dirname(fpath), "condensates_AIO-" + basename(fpath))
+    df_save.to_csv(fname_save, index=False)
