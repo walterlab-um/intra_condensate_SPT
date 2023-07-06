@@ -7,8 +7,9 @@ from rich.progress import track
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-zoom_in_x = (210, 310)
-zoom_in_y = (290, 390)
+# full size: 418x674
+zoom_in_x = (90, 200)
+zoom_in_y = (280, 390)
 
 um_per_pixel = 0.117
 folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig1_system design/c_boundary_w_RNAtracks/"
@@ -25,20 +26,12 @@ scalebar_length_um = 1
 um_per_pixel = 0.117
 scalebar_length_pxl = scalebar_length_um / um_per_pixel
 
-# loading datasets
-keyword = "Replicate1_FOV-6-"
+# load dataset
+fname_RNA = "SPT_results_AIO-20221031-FL_noTR_noDex_20ms_0hr_Replicate1_FOV-7-RNAs.csv"
+fname_condensate = "condensates_AIO-20221031-FL_noTR_noDex_20ms_0hr_Replicate1_FOV-7-condensates_AveProj_Simple Segmentation.csv"
 
-fpath_RNA = [f for f in os.listdir(".") if f.startswith("SPT_results")][0]
-fpath_condensates = [f for f in os.listdir(".") if f.startswith("condensates")][0]
-
-df_RNA = pd.read_csv(fpath_RNA)
-df_condensate = pd.read_csv(fpath_condensates)
-
-df_RNA_current_FOV = df_RNA[df_RNA["filename"].str.contains(keyword)]
-# load condensates near the RNA as dictionary of polygons
-df_condensate_current_FOV = df_condensate[
-    df_condensate["filename"].str.contains(keyword)
-]
+df_RNA = pd.read_csv(fname_RNA)
+df_condensate = pd.read_csv(fname_condensate)
 
 
 def list_like_string_to_xyt(list_like_string):
@@ -51,13 +44,13 @@ def list_like_string_to_xyt(list_like_string):
     return np.array(lst_xyt, dtype=float)
 
 
-plt.figure(dpi=300, figsize=(5, 5))
+plt.figure(dpi=300)
 ## plot condensate boundaries
 for condensateID in track(
-    df_condensate_current_FOV["condensateID"].unique(), description="Plot condensates"
+    df_condensate["condensateID"].unique(), description="Plot condensates"
 ):
-    str_condensate_coords = df_condensate_current_FOV[
-        df_condensate_current_FOV["condensateID"] == condensateID
+    str_condensate_coords = df_condensate[
+        df_condensate["condensateID"] == condensateID
     ]["contour_coord"].squeeze()
     x = []
     y = []
@@ -74,19 +67,25 @@ for condensateID in track(
 # plt.ylim(0, 674)
 
 ## plot RNA tracks
-for _, row in track(df_RNA_current_FOV.iterrows(), description="Plot RNAs"):
+for _, row in track(df_RNA.iterrows(), description="Plot RNAs"):
     x = list_like_string_to_xyt(row["list_of_x"])
     y = list_like_string_to_xyt(row["list_of_y"])
     t = list_like_string_to_xyt(row["list_of_t"])
 
     for i in range(len(t) - 1):
-        plt.plot(
-            x[i : i + 2],
-            y[i : i + 2],
-            "-",
-            color=cmap_RNA(np.mean(t[i : i + 2]) / 200),
-            linewidth=0.5,
-        )
+        if (
+            (x[i] > zoom_in_x[0])
+            & (x[i] < zoom_in_x[1])
+            & (y[i] > zoom_in_y[0])
+            & (y[i] < zoom_in_y[1])
+        ):
+            plt.plot(
+                x[i : i + 2],
+                y[i : i + 2],
+                "-",
+                color=cmap_RNA(np.mean(t[i : i + 2]) / 200),
+                linewidth=0.5,
+            )
 
 plt.tight_layout()
 plt.axis("scaled")
