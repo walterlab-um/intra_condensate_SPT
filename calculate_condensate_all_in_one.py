@@ -140,7 +140,6 @@ for fpath in track(lst_fpath):
 
         # Finally, add the new row to the list to form dataframe
         new_row = [
-            filename,
             condensateID,
             cnt_to_list(cnt),
             center_x_pxl,
