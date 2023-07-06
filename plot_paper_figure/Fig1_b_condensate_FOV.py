@@ -16,7 +16,12 @@ os.chdir(folder_save)
 plow = 0.5  # imshow intensity percentile
 phigh = 85
 line_color = "#00274C"
-scalebar_color = "#FFA000"
+# scalebar_color = "#FFA000"
+scalebar_color = "black"
+
+# full size: 418x674
+zoom_in_x = (140, 320)
+zoom_in_y = (140, 320)
 
 # scale bar
 scalebar_length_um = 5
@@ -27,8 +32,10 @@ ilastik_output = imread(fpath)
 img = imread(fpath[:-24] + ".tif")
 
 # Cropping
-ilastik_output = ilastik_output[35:235, 150:350]
-img = img[35:235, 150:350]
+ilastik_output = ilastik_output[
+    zoom_in_y[0] : zoom_in_y[1], zoom_in_x[0] : zoom_in_x[1]
+]
+img = img[zoom_in_y[0] : zoom_in_y[1], zoom_in_x[0] : zoom_in_x[1]]
 
 mask_all_condensates = 2 - ilastik_output  # background label=2, condensate label=1
 # find contours coordinates in binary edge image. contours here is a list of np.arrays containing all coordinates of each individual edge/contour.
@@ -44,11 +51,11 @@ plt.imshow(img, cmap="Blues", vmin=vmin, vmax=vmax)
 for cnt in contours:
     x = cnt[:, 0][:, 0]
     y = cnt[:, 0][:, 1]
-    plt.plot(x, y, "-", color=line_color, linewidth=2)
+    plt.plot(x, y, "-", color=line_color, linewidth=2, alpha=0.7)
     # still the last closing line will be missing, get it below
     xlast = [x[-1], x[0]]
     ylast = [y[-1], y[0]]
-    plt.plot(xlast, ylast, "-", color=line_color, linewidth=2)
+    plt.plot(xlast, ylast, "-", color=line_color, linewidth=2, alpha=0.7)
 plt.xlim(0, img.shape[0])
 plt.ylim(0, img.shape[1])
 plt.plot([10, 10 + scalebar_length_pxl], [10, 10], "-", color=scalebar_color, lw=7)
