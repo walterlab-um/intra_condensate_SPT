@@ -31,7 +31,6 @@ lst_angle_fraction_titles = [
     for i in range(len(angle_bins) - 1)
 ]
 columns = [
-    "filename",
     "trackID",
     "list_of_t",
     "list_of_x",
@@ -169,7 +168,6 @@ for fpath in track(lst_fpath):
 
         # Save
         new_row = [
-            fname,
             trackID,
             df_current_track["t"].to_list(),
             df_current_track["x"].to_list(),
