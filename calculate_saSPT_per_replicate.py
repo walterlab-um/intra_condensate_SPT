@@ -13,14 +13,13 @@ from tkinter import filedialog as fd
 IMPORTANT
 Please replace the "DEFAULT PARAMETER GRIDS" section of site-packages/saspt/constants.py with an exact copy of the following:
 
-static_err = 0.016
+# Guoming Gao: calculate error bounds
 um_per_pxl = 0.117
 link_max = 3
 t_between_frames = 0.02
-log10D_low = np.log10(static_err ** 2 / (4 * (t_between_frames)))
 log10D_high = np.log10((um_per_pxl * link_max) ** 2 / (4 * (t_between_frames)))
 
-DEFAULT_DIFF_COEFS = np.logspace(log10D_low, log10D_high, 100)
+DEFAULT_DIFF_COEFS = np.logspace(-2, log10D_high, 100)
 DEFAULT_LOC_ERRORS = np.arange(0, 0.072, 0.002)
 DEFAULT_HURST_PARS = np.arange(0.05, 1.0, 0.05)
 """
