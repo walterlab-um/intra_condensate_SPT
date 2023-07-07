@@ -120,7 +120,7 @@ plt.title("Aging, without Dextran", weight="bold")
 plt.ylabel("Static Fraction", weight="bold")
 plt.tight_layout()
 plt.savefig(
-    "saSPT_pooled-Aging_noDex_Fstatic.png",
+    "F_static-saSPT_pooled-Aging_noDex.png",
     format="png",
     bbox_inches="tight",
 )
@@ -174,7 +174,7 @@ plt.title("Aging, 10% Dextran", weight="bold")
 plt.ylabel("Static Fraction", weight="bold")
 plt.tight_layout()
 plt.savefig(
-    "saSPT_pooled-Aging_10Dex_Fstatic.png",
+    "F_static-saSPT_pooled-Aging_10Dex.png",
     format="png",
     bbox_inches="tight",
 )
@@ -231,7 +231,7 @@ plt.title("Effect of RNA,\nno Dextran", weight="bold")
 plt.ylabel("Static Fraction", weight="bold")
 plt.tight_layout()
 plt.savefig(
-    "saSPT_pooled-Aging_compareRNA_noDex_Fstatic.png",
+    "F_static-saSPT_pooled-Aging_compareRNA_noDex.png",
     format="png",
     bbox_inches="tight",
 )
@@ -288,7 +288,7 @@ plt.title("Effect of RNA,\n10% Dextran", weight="bold")
 plt.ylabel("Static Fraction", weight="bold")
 plt.tight_layout()
 plt.savefig(
-    "saSPT_pooled-Aging_compareRNA_10Dex_Fstatic.png",
+    "F_static-saSPT_pooled-Aging_compareRNA_10Dex.png",
     format="png",
     bbox_inches="tight",
 )
