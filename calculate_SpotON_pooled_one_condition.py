@@ -126,30 +126,37 @@ params = {
     "b": 0.20811,
     "useZcorr": True,
 }
-fit = fastspt.fit_jump_length_distribution(
-    JumpProb, JumpProbCDF, HistVecJumps, HistVecJumpsCDF, **params
-)
 
-# Diffusion coefficent value
-D_fast = fit.params["D_fast"].value
-D_slow = fit.params["D_med"].value
-D_static = fit.params["D_bound"].value
-# Diffusion coefficent error
-D_fast_SE = fit.params["D_fast"].stderr
-D_slow_SE = fit.params["D_med"].stderr
-D_static_SE = fit.params["D_bound"].stderr
-# Fraction value
-F_fast = fit.params["F_fast"].value
-F_static = fit.params["F_bound"].value
-F_slow = 1 - F_fast - F_static
-# Fraction error, using Subtraction Formula for error propagation
-F_fast_SE = fit.params["F_fast"].stderr
-F_static_SE = fit.params["F_bound"].stderr
-if (F_fast_SE is None) or (F_static_SE is None):
-    F_slow_SE = np.nan
-else:
-    F_slow_SE = np.sqrt(F_fast_SE**2 + F_static_SE**2)
+F_slow_SE = np.nan  # re run fastspt untill it's working
+while np.isnan(F_slow_SE):
+    fit = fastspt.fit_jump_length_distribution(
+        JumpProb, JumpProbCDF, HistVecJumps, HistVecJumpsCDF, **params
+    )
 
+    # Diffusion coefficent value
+    D_fast = fit.params["D_fast"].value
+    D_slow = fit.params["D_med"].value
+    D_static = fit.params["D_bound"].value
+    # Diffusion coefficent error
+    D_fast_SE = fit.params["D_fast"].stderr
+    D_slow_SE = fit.params["D_med"].stderr
+    D_static_SE = fit.params["D_bound"].stderr
+    # Fraction value
+    F_fast = fit.params["F_fast"].value
+    F_static = fit.params["F_bound"].value
+    F_slow = 1 - F_fast - F_static
+    # Fraction error, using Subtraction Formula for error propagation
+    F_fast_SE = fit.params["F_fast"].stderr
+    F_static_SE = fit.params["F_bound"].stderr
+    if (F_fast_SE is None) or (F_static_SE is None):
+        F_slow_SE = np.nan
+    else:
+        F_slow_SE = np.sqrt(F_fast_SE**2 + F_static_SE**2)
+
+    if np.isnan(F_slow_SE):
+        print("Failed! rerun!")
+
+print("Finally succeed!!!")
 # save
 values = [
     N_tracks,
