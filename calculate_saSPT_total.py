@@ -1,20 +1,23 @@
 import os
+from os.path import isdir, join, dirname, basename
+import shutil
 import numpy as np
 import pandas as pd
 from saspt import StateArray, RBME
+from tkinter import filedialog as fd
 
-# calculate saSPT results using AIO format input
-
+# calculate saSPT results using AIO format input, pooling all replicates together.
+# Update: Each AIO file is one FOV. Let user choose all replicates within the same condition. The script will calculate saSPT for all FOVs within each replicate.
 
 """
 IMPORTANT
 Please replace the "DEFAULT PARAMETER GRIDS" section of site-packages/saspt/constants.py with an exact copy of the following:
 
-static_err = 0.016
+localization_error = 0.02
 um_per_pxl = 0.117
 link_max = 3
 t_between_frames = 0.02
-log10D_low = np.log10(static_err ** 2 / (4 * (t_between_frames)))
+log10D_low = np.log10(localization_error ** 2 / (4 * (t_between_frames)))
 log10D_high = np.log10((um_per_pxl * link_max) ** 2 / (4 * (t_between_frames)))
 
 DEFAULT_DIFF_COEFS = np.logspace(log10D_low, log10D_high, 100)
@@ -29,11 +32,15 @@ saSPT_settings = dict(
     focal_depth=0.7,
     progress_bar=True,
 )
-os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
+# AIO file folder
+print("Choose all SPT_results_AIO_xxxxx.csv files within the same condition:")
+lst_AIO_files = list(fd.askopenfilenames())
+data_folder = dirname(lst_AIO_files[0])
+os.chdir(data_folder)
+
 # Displacement threshold for non static molecules
 threshold_disp = 0.2  # unit: um
 # Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
-lst_fname = [f for f in os.listdir(".") if f.startswith("SPT_results_AIO")]
 
 
 def reformat_for_saSPT(df_AIO):
@@ -75,18 +82,12 @@ def reformat_for_saSPT(df_AIO):
     return df_saSPT_input
 
 
-lst_log10D = []
-lst_log10D_prob = []
-lst_loc_error = []
-lst_loc_error_prob = []
-for fname in lst_fname:
-    df_AIO = pd.read_csv(fname)
-    df_saSPT_input = reformat_for_saSPT(df_AIO)
-    print("Done reformatting: ", fname)
+df_concat = pd.concat([pd.read_csv(f) for f in lst_AIO_files])
+df_saSPT_input = reformat_for_saSPT(df_concat)
 
-    # saSPT
-    SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
-    df_save = SA.occupations_dataframe
-    fname_save = "saSPT_output-" + fname[16:]
-    df_save.to_csv(fname_save, index=False)
-    SA.plot_occupations(fname_save[:-4] + ".png")
+# saSPT
+SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
+df_save = SA.occupations_dataframe
+fname_save = "saSPT-pooled-pleaserename.csv"
+df_save.to_csv(fname_save, index=False)
+SA.plot_occupations(fname_save[:-4] + ".png")
