@@ -9,7 +9,7 @@ import seaborn as sns
 sns.set(color_codes=True, style="white")
 pd.options.mode.chained_assignment = None  # default='warn'
 
-color = "#00274C"
+color = "#9a3324"
 fpath_concat = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig2_diffusion analysis/SPT_results_AIO_concat-0Dex_noTR_0hr.csv"
 
 # # threshold 1: minimla tracklength, to avoid tracks not
@@ -84,7 +84,7 @@ D_phys_linear = slope_linear / (8 / 3)  # um^2/s
 x = np.linspace(0, 1, 100)
 y = intercept_linear + slope_linear * x
 
-plt.plot(x, y, "--", color="firebrick", lw=1)
+plt.plot(x, y, "--", color="black", lw=1)
 plt.text(
     0.08,
     0.02,  # 0.055
@@ -99,7 +99,7 @@ plt.text(
     + r"R$^2$ = "
     + str(round(R_linear**2, 4)),
     weight="bold",
-    color=color,
+    color="black",
 )
 
 plt.xlim(0, 1)

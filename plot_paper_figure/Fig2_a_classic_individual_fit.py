@@ -9,7 +9,7 @@ import seaborn as sns
 sns.set(color_codes=True, style="white")
 pd.options.mode.chained_assignment = None  # default='warn'
 
-color = "#00274C"
+color = "#9a3324"
 fpath_concat = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig2_diffusion analysis/SPT_results_AIO_concat-0Dex_noTR_0hr.csv"
 
 
@@ -38,13 +38,6 @@ ax = sns.histplot(
     kde=True,
     lw=3,
 )
-# plt.text(
-#     1.3,
-#     0.32,
-#     "N = " + str(df_all.shape[0]),
-#     weight="bold",
-#     color=color,
-# )
 plt.xlim(df_all["linear_fit_sigma"].min(), df_all["linear_fit_sigma"].max())
 plt.xlabel("Localization Error, nm", weight="bold")
 plt.ylabel("Probability", weight="bold")
@@ -75,7 +68,7 @@ plt.text(
     0.32,
     "N = " + str(df_all.shape[0]),
     weight="bold",
-    color=color,
+    color="black",
 )
 plt.xlim(df_all["Displacement_um"].min(), df_all["Displacement_um"].max())
 plt.xlabel(r"Trajectory Displacement, $\mu$m", weight="bold")
@@ -108,7 +101,7 @@ plt.text(
     0.085,
     "N = " + str(df_all.shape[0]),
     weight="bold",
-    color=color,
+    color="black",
 )
 plt.xlim(log10D_low - 1.5, log10D_high + 1.5)
 plt.xlabel(r"log$_{10}$D ($\mu$m^2/s)", weight="bold")
@@ -168,7 +161,7 @@ plt.text(
     0.0305,
     "N = " + str(df_alpha_possible.shape[0]),
     weight="bold",
-    color=color,
+    color="black",
 )
 plt.xlim(0, 1)
 plt.xlabel(r"$\alpha$ Componenet)", weight="bold")
@@ -201,7 +194,7 @@ plt.text(
     0.046,
     "N = " + str(df_angles.shape[0]),
     weight="bold",
-    color=color,
+    color="black",
 )
 plt.xlabel("Angle between Two Steps, Degree", weight="bold")
 plt.ylabel("Probability", weight="bold")
