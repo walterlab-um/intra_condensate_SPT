@@ -1,11 +1,13 @@
 import os
-from os.path import isdir, join
+from os.path import isdir, join, dirname, basename
 import shutil
 import numpy as np
 import pandas as pd
 from saspt import StateArray, RBME
+from tkinter import filedialog as fd
 
-# calculate saSPT results using AIO format input, for each replicate
+# calculate saSPT results using AIO format input, for each replicate.
+# Update: Each AIO file is one FOV. Let user choose all replicates within the same condition. The script will calculate saSPT for all FOVs within each replicate.
 
 """
 IMPORTANT
@@ -31,19 +33,14 @@ saSPT_settings = dict(
     progress_bar=True,
 )
 # AIO file folder
-os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
-# save folder
-save_folder = "saSPT_per_replicate"
-if isdir(save_folder):
-    shutil.rmtree(save_folder)
-    os.mkdir(save_folder)
-else:
-    os.mkdir(save_folder)
+print("Choose all SPT_results_AIO_xxxxx.csv files within the same condition:")
+lst_AIO_files = list(fd.askopenfilenames())
+save_folder = dirname(lst_AIO_files[0])
+os.chdir(save_folder)
 
 # Displacement threshold for non static molecules
 threshold_disp = 0.2  # unit: um
 # Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
-lst_fname = [f for f in os.listdir(".") if f.startswith("SPT_results_AIO")]
 
 
 def reformat_for_saSPT(df_AIO):
@@ -85,32 +82,26 @@ def reformat_for_saSPT(df_AIO):
     return df_saSPT_input
 
 
-for fname in lst_fname:
-    df_AIO = pd.read_csv(fname)
+all_filenames = [basename(f) for f in lst_AIO_files]
+replicate_prefixs = np.unique([f.split("FOV")[0] for f in all_filenames])
+for prefix in replicate_prefixs:
+    print("Now working on: ", prefix[:-1])
 
-    # all filenames within the current condition/file
-    all_filenames = df_AIO["filename"].unique().tolist()
-    # filename prefix for each replicate
-    replicate_prefixs = np.unique([f.split("FOV")[0] for f in all_filenames])
-    # Main
-    lst_rows_of_df = []
-    for prefix in replicate_prefixs:
-        current_replicate_filenames = [f for f in all_filenames if prefix in f]
-        df_current_replicate = df_AIO[
-            df_AIO["filename"].isin(current_replicate_filenames)
-        ]
+    current_replicate_filenames = [f for f in all_filenames if prefix in f]
+    df_current_replicate = pd.concat(
+        [pd.read_csv(f) for f in current_replicate_filenames]
+    )
 
-        # skip if the dataset is too small
-        if df_current_replicate.shape[0] < 1000:
-            print("Dataset skip: N_tracks = ", df_current_replicate.shape[0])
-            continue
+    # skip if the dataset is too small
+    if df_current_replicate.shape[0] < 1000:
+        print("Dataset skip: N_tracks = ", df_current_replicate.shape[0])
+        continue
 
-        df_saSPT_input = reformat_for_saSPT(df_current_replicate)
-        print("Done reformatting: ", fname[16:-4], "\n", prefix[:-1])
+    df_saSPT_input = reformat_for_saSPT(df_current_replicate)
 
-        # saSPT
-        SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
-        df_save = SA.occupations_dataframe
-        fname_save = join(save_folder, fname[16:-4] + "_" + prefix[:-1] + ".csv")
-        df_save.to_csv(fname_save, index=False)
-        SA.plot_occupations(fname_save[:-4] + ".png")
+    # saSPT
+    SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
+    df_save = SA.occupations_dataframe
+    fname_save = "saSPT-" + prefix[:-1] + ".csv"
+    df_save.to_csv(fname_save, index=False)
+    SA.plot_occupations(fname_save[:-4] + ".png")
