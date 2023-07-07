@@ -13,6 +13,9 @@ warnings.filterwarnings("ignore")
 
 # Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
 
+# From the iteration results, it seems SpotON's iteration normally do not increase rate of success! It's more about the initial guess! Let's bring it down to 1?
+N_iterations = 3  # desired number of fitting iterations
+
 print("Choose the SPT_results_AIO_concat-xxxxx.csv file for one condition:")
 fpath_concat = fd.askopenfilename()
 df_concat = pd.read_csv(fpath_concat)
@@ -52,7 +55,7 @@ Frac_Fast_range = [0, 1]
 # Following bounds are designed based on saSPT results
 D_fast_range = [0.1, 1]
 D_med_range = [0.01, 0.1]
-D_bound_range = [10 ** (-5), 0.01]
+D_bound_range = [10 ** (-4), 0.01]
 LB = [
     D_fast_range[0],
     D_med_range[0],
@@ -67,7 +70,6 @@ UB = [
     Frac_Fast_range[1],
     Frac_Bound_range[1],
 ]
-N_iterations = 3  # desired number of fitting iterations
 dZ = 0.7  # The axial illumination slice, um
 
 
