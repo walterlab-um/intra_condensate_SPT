@@ -2,15 +2,17 @@ import os
 import numpy as np
 import pandas as pd
 import fastspt
-from rich.progress import track
 import warnings
 
 warnings.filterwarnings("ignore")
 
-# Calculate SpotON based on replicate, not FOV
+# Calculate SpotON using AIO format input, pooling all replicates together, for a single condition.
+# Update: Each AIO file is one FOV. Let user choose all replicates within the same condition. The script will calculate SpotON for all FOVs within all replicates.
 
 # Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
-os.chdir("/Volumes/AnalysisGG/PROCESSED_DATA/RNA_SPT_in_FUS-May2023_wrapup")
+os.chdir(
+    "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig2_diffusion analysis/SPT_results_AIO_files"
+)
 lst_fname = [f for f in os.listdir(".") if f.startswith("SPT_results_AIO")]
 # Displacement threshold for non static molecules
 threshold_disp = 0.2  # unit: um
@@ -21,8 +23,7 @@ s_per_frame = 0.02
 
 #########################################
 # Output file structure
-columns = [
-    "replicate_prefix",
+variables = [
     "N_tracks",
     "D_fast",
     "D_fast_SE",
@@ -97,91 +98,77 @@ def reformat_for_SpotON(df_in):
     return SpotONinput
 
 
-for fname in track(lst_fname):
-    df_AIO = pd.read_csv(fname)
-    # all filenames within the current condition/file
-    all_filenames = df_AIO["filename"].unique().tolist()
-    # filename prefix for each replicate
-    replicate_prefixs = np.unique([f.split("FOV")[0] for f in all_filenames])
-    # Main
-    lst_rows_of_df = []
-    for prefix in replicate_prefixs:
-        current_replicate_filenames = [f for f in all_filenames if prefix in f]
-        df_current_replicate = df_AIO[
-            df_AIO["filename"].isin(current_replicate_filenames)
-        ]
+df_AIO = pd.concat([pd.read_csv(f) for f in lst_fname])
 
-        # Perform Spot ON
-        SpotONinput = reformat_for_SpotON(df_current_replicate)
-        N_tracks = SpotONinput.shape[0]
-        h_test = fastspt.compute_jump_length_distribution(
-            SpotONinput, CDF=True, useEntireTraj=False
-        )
-        HistVecJumpsCDF, JumpProbCDF, HistVecJumps, JumpProb, _ = h_test
+## Perform Spot ON
+SpotONinput = reformat_for_SpotON(df_AIO)
+N_tracks = SpotONinput.shape[0]
+h_test = fastspt.compute_jump_length_distribution(
+    SpotONinput, CDF=True, useEntireTraj=False
+)
+HistVecJumpsCDF, JumpProbCDF, HistVecJumps, JumpProb, _ = h_test
 
-        ## Perform the fit
-        localization_error_um = df_current_replicate["linear_fit_sigma"].mean() / 1000
-        params = {
-            "UB": UB,
-            "LB": LB,
-            "LocError": localization_error_um,
-            "iterations": N_iterations,
-            "dT": s_per_frame,
-            "dZ": dZ,
-            "ModelFit": [1, 2][False],
-            "fit2states": False,
-            "a": 0.15716,
-            "b": 0.20811,
-            "useZcorr": True,
-        }
-        fit = fastspt.fit_jump_length_distribution(
-            JumpProb, JumpProbCDF, HistVecJumps, HistVecJumpsCDF, **params
-        )
+# Perform the fit
+localization_error_um = df_AIO["linear_fit_sigma"].mean() / 1000
+params = {
+    "UB": UB,
+    "LB": LB,
+    "LocError": localization_error_um,
+    "iterations": N_iterations,
+    "dT": s_per_frame,
+    "dZ": dZ,
+    "ModelFit": [1, 2][False],
+    "fit2states": False,
+    "a": 0.15716,
+    "b": 0.20811,
+    "useZcorr": True,
+}
+fit = fastspt.fit_jump_length_distribution(
+    JumpProb, JumpProbCDF, HistVecJumps, HistVecJumpsCDF, **params
+)
 
-        # Diffusion coefficent value
-        D_fast = fit.params["D_fast"].value
-        D_slow = fit.params["D_med"].value
-        D_static = fit.params["D_bound"].value
-        # Diffusion coefficent error
-        D_fast_SE = fit.params["D_fast"].stderr
-        D_slow_SE = fit.params["D_med"].stderr
-        D_static_SE = fit.params["D_bound"].stderr
-        # Fraction value
-        F_fast = fit.params["F_fast"].value
-        F_static = fit.params["F_bound"].value
-        F_slow = 1 - F_fast - F_static
-        # Fraction error, using Subtraction Formula for error propagation
-        F_fast_SE = fit.params["F_fast"].stderr
-        F_static_SE = fit.params["F_bound"].stderr
-        if (F_fast_SE is None) or (F_static_SE is None):
-            F_slow_SE = np.nan
-        else:
-            F_slow_SE = np.sqrt(F_fast_SE**2 + F_static_SE**2)
+# Diffusion coefficent value
+D_fast = fit.params["D_fast"].value
+D_slow = fit.params["D_med"].value
+D_static = fit.params["D_bound"].value
+# Diffusion coefficent error
+D_fast_SE = fit.params["D_fast"].stderr
+D_slow_SE = fit.params["D_med"].stderr
+D_static_SE = fit.params["D_bound"].stderr
+# Fraction value
+F_fast = fit.params["F_fast"].value
+F_static = fit.params["F_bound"].value
+F_slow = 1 - F_fast - F_static
+# Fraction error, using Subtraction Formula for error propagation
+F_fast_SE = fit.params["F_fast"].stderr
+F_static_SE = fit.params["F_bound"].stderr
+if (F_fast_SE is None) or (F_static_SE is None):
+    F_slow_SE = np.nan
+else:
+    F_slow_SE = np.sqrt(F_fast_SE**2 + F_static_SE**2)
 
-        # save
-        lst_rows_of_df.append(
-            [
-                prefix,
-                N_tracks,
-                D_fast,
-                D_fast_SE,
-                D_slow,
-                D_slow_SE,
-                D_static,
-                D_static_SE,
-                F_fast,
-                F_fast_SE,
-                F_slow,
-                F_slow_SE,
-                F_static,
-                F_static_SE,
-                params,
-            ]
-        )
-
-    df_save = pd.DataFrame.from_records(
-        lst_rows_of_df,
-        columns=columns,
-    )
-    fname_save = "SPOTON_results-" + fname[16:]
-    df_save.to_csv(fname_save, index=False)
+# save
+values = [
+    N_tracks,
+    D_fast,
+    D_fast_SE,
+    D_slow,
+    D_slow_SE,
+    D_static,
+    D_static_SE,
+    F_fast,
+    F_fast_SE,
+    F_slow,
+    F_slow_SE,
+    F_static,
+    F_static_SE,
+    params,
+]
+df_save = pd.DataFrame(
+    {
+        "variables": variables,
+        "values": values,
+    },
+    dtype=object,
+)
+df_save.to_csv("SPOTON_results-pleaserename.csv", index=False)
