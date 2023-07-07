@@ -1,6 +1,5 @@
 import os
-from os.path import isdir, join, dirname, basename
-import shutil
+from os.path import dirname, basename
 import numpy as np
 import pandas as pd
 from saspt import StateArray, RBME
@@ -21,10 +20,11 @@ saSPT_settings = dict(
     focal_depth=0.7,
     progress_bar=True,
 )
-# AIO file folder
-print("Choose all SPT_results_AIO_xxxxx.csv files within the same condition:")
-lst_AIO_files = list(fd.askopenfilenames())
-data_folder = dirname(lst_AIO_files[0])
+
+print("Choose the SPT_results_AIO_concat-xxxxx.csv file for one condition:")
+fpath_concat = fd.askopenfilename()
+df_concat = pd.read_csv(fpath_concat)
+data_folder = dirname(fpath_concat)
 os.chdir(data_folder)
 
 # Displacement threshold for non static molecules
@@ -71,12 +71,11 @@ def reformat_for_saSPT(df_AIO):
     return df_saSPT_input
 
 
-df_concat = pd.concat([pd.read_csv(f) for f in lst_AIO_files])
 df_saSPT_input = reformat_for_saSPT(df_concat)
 
 # saSPT
 SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
 df_save = SA.occupations_dataframe
-fname_save = "saSPT-pooled-pleaserename.csv"
+fname_save = "saSPT-pooled-" + basename(fpath_concat).split("concat-")[-1]
 df_save.to_csv(fname_save, index=False)
 SA.plot_occupations(fname_save[:-4] + ".png")

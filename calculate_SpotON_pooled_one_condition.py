@@ -1,8 +1,10 @@
 import os
+from os.path import dirname, basename
 import numpy as np
 import pandas as pd
 import fastspt
 import warnings
+from tkinter import filedialog as fd
 
 warnings.filterwarnings("ignore")
 
@@ -10,10 +12,13 @@ warnings.filterwarnings("ignore")
 # Update: Each AIO file is one FOV. Let user choose all replicates within the same condition. The script will calculate SpotON for all FOVs within all replicates.
 
 # Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
-os.chdir(
-    "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig2_diffusion analysis/SPT_results_AIO_files"
-)
-lst_fname = [f for f in os.listdir(".") if f.startswith("SPT_results_AIO")]
+
+print("Choose the SPT_results_AIO_concat-xxxxx.csv file for one condition:")
+fpath_concat = fd.askopenfilename()
+df_concat = pd.read_csv(fpath_concat)
+data_folder = dirname(fpath_concat)
+os.chdir(data_folder)
+
 # Displacement threshold for non static molecules
 threshold_disp = 0.2  # unit: um
 threshold_disp_switch = False
@@ -45,9 +50,9 @@ variables = [
 Frac_Bound_range = [0, 1]
 Frac_Fast_range = [0, 1]
 # Following bounds are designed based on saSPT results
-D_fast_range = [0.08, 1.6]
-D_med_range = [0.003, 0.08]
-D_bound_range = [10 ** (-5), 0.003]
+D_fast_range = [0.1, 1]
+D_med_range = [0.01, 0.1]
+D_bound_range = [10 ** (-5), 0.01]
 LB = [
     D_fast_range[0],
     D_med_range[0],
@@ -98,10 +103,8 @@ def reformat_for_SpotON(df_in):
     return SpotONinput
 
 
-df_AIO = pd.concat([pd.read_csv(f) for f in lst_fname])
-
 ## Perform Spot ON
-SpotONinput = reformat_for_SpotON(df_AIO)
+SpotONinput = reformat_for_SpotON(df_concat)
 N_tracks = SpotONinput.shape[0]
 h_test = fastspt.compute_jump_length_distribution(
     SpotONinput, CDF=True, useEntireTraj=False
@@ -109,7 +112,7 @@ h_test = fastspt.compute_jump_length_distribution(
 HistVecJumpsCDF, JumpProbCDF, HistVecJumps, JumpProb, _ = h_test
 
 # Perform the fit
-localization_error_um = df_AIO["linear_fit_sigma"].mean() / 1000
+localization_error_um = df_concat["linear_fit_sigma"].mean() / 1000
 params = {
     "UB": UB,
     "LB": LB,
@@ -171,4 +174,5 @@ df_save = pd.DataFrame(
     },
     dtype=object,
 )
-df_save.to_csv("SPOTON_results-pleaserename.csv", index=False)
+fname_save = "SPOTON_results-" + basename(fpath_concat).split("concat-")[-1]
+df_save.to_csv(fname_save, index=False)
