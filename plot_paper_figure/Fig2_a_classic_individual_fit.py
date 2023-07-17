@@ -18,12 +18,16 @@ df_all = pd.read_csv(fpath_concat)
 os.chdir(dirname(fpath_concat))
 
 # calculate error bounds
+# D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
+# diffusion dimension = 2. Note: This is the dimension of the measured data, not the actual movements! Although particles are doing 3D diffussion, the microscopy data is a projection on 2D plane and thus should be treated as 2D diffusion!
+# MSD = 2 n D tau + 2 n sigma^2 - 4 n R D tau, n=2, R=1/6
+# MSD = (4D - 8/6 D) tau + 4 sigma^2
+# MSD = 8/3 D tau + 4 sigma^2
 s_per_frame = 0.02
 localization_error = df_all["linear_fit_sigma"].mean() / 1000
 um_per_pxl = 0.117
 link_max = 3
-log10D_low = np.log10(localization_error**2 / (4 * (s_per_frame)))
-log10D_high = np.log10((um_per_pxl * link_max) ** 2 / (4 * (s_per_frame)))
+log10D_low = np.log10((localization_error**2) / ((8 / 3) * (s_per_frame)))
 
 
 ##########################################
@@ -38,18 +42,19 @@ ax = sns.histplot(
     kde=True,
     lw=3,
 )
-plt.xlim(df_all["linear_fit_sigma"].min(), df_all["linear_fit_sigma"].max())
+plt.axvline(50, ls="--", color="dimgray", alpha=0.7)
+plt.xlim(0, df_all["linear_fit_sigma"].max())
 plt.xlabel("Localization Error, nm", weight="bold")
 plt.ylabel("Probability", weight="bold")
 plt.savefig("LocError_histo.png", format="png", bbox_inches="tight")
 plt.close()
 
 ##########################################
-# Static by displacement
+# Mean step size (whether static molecule)
 plt.figure(figsize=(5, 3), dpi=300)
 ax = sns.histplot(
     data=df_all,
-    x="Displacement_um",
+    x="mean_stepsize_nm",
     bins=40,
     stat="probability",
     color=color,
@@ -57,61 +62,158 @@ ax = sns.histplot(
     lw=3,
 )
 plt.axvspan(
-    df_all["Displacement_um"].min(),
+    df_all["mean_stepsize_nm"].min(),
     threshold_disp,
     facecolor="dimgray",
     alpha=0.2,
     edgecolor="none",
 )
 plt.text(
-    1.3,
-    0.32,
-    "N = " + str(df_all.shape[0]),
+    180,
+    0.155,
+    "# Molecuels = " + str(df_all.shape[0]),
     weight="bold",
+    fontsize=11,
     color="black",
 )
-plt.xlim(df_all["Displacement_um"].min(), df_all["Displacement_um"].max())
-plt.xlabel(r"Trajectory Displacement, $\mu$m", weight="bold")
+plt.xlim(0, 300)
+plt.xlabel("Trajectory Mean Step Size, nm", weight="bold")
 plt.ylabel("Probability", weight="bold")
-plt.savefig("Displacement_histo.png", format="png", bbox_inches="tight")
+plt.savefig("Mean_stepsize_histo.png", format="png", bbox_inches="tight")
 plt.close()
 
 ##########################################
-# D distribution among the mobile molecules plus R2
-df_all = df_all[df_all["Displacement_um"] > threshold_disp]
+# Coorelations, why small R2?
+plt.figure(figsize=(6, 5), dpi=300)
+sns.jointplot(
+    data=df_all,
+    x="linear_fit_R2",
+    xlim=(0, 1),
+    y="mean_stepsize_nm",
+    ylim=(0, 300),
+    kind="kde",
+    color=color,
+)
+plt.xlabel(r"Linear Fitting R$^{2}$", weight="bold")
+plt.ylabel("Mean Step Size, nm", weight="bold")
+plt.tight_layout()
+plt.savefig(
+    "unused-correlation_linearR2_stepsize.png", format="png", bbox_inches="tight"
+)
+plt.close()
+
+plt.figure(figsize=(6, 5), dpi=300)
+sns.jointplot(
+    data=df_all,
+    x="linear_fit_R2",
+    xlim=(0, 1),
+    y="loglog_fit_R2",
+    ylim=(0, 1),
+    kind="kde",
+    color=color,
+)
+plt.xlabel(r"Linear Fitting R$^{2}$", weight="bold")
+plt.ylabel(r"Log-Log Fitting R$^{2}$", weight="bold")
+plt.tight_layout()
+plt.savefig(
+    "unused-correlation_linearR2_loglogR2.png", format="png", bbox_inches="tight"
+)
+plt.close()
+
+plt.figure(figsize=(6, 5), dpi=300)
+sns.jointplot(
+    data=df_all,
+    x="linear_fit_R2",
+    xlim=(0, 1),
+    y="alpha",
+    ylim=(0, 1),
+    kind="kde",
+    color=color,
+)
+plt.xlabel(r"Linear Fitting R$^{2}$", weight="bold")
+plt.ylabel("alpha", weight="bold")
+plt.tight_layout()
+plt.savefig("correlation_linearR2_alpha.png", format="png", bbox_inches="tight")
+plt.close()
+
+plt.figure(figsize=(6, 5), dpi=300)
+sns.jointplot(
+    data=df_all,
+    x="linear_fit_R2",
+    xlim=(0, 1),
+    y="(150,180]",
+    ylim=(0, 0.7),
+    kind="kde",
+    color=color,
+)
+plt.xlabel(r"Linear Fitting R$^{2}$", weight="bold")
+plt.ylabel("anlge (150,180]", weight="bold")
+plt.tight_layout()
+plt.savefig("unused-correlation_linearR2_angle.png", format="png", bbox_inches="tight")
+plt.close()
+
+plt.figure(figsize=(6, 5), dpi=300)
+sns.jointplot(
+    data=df_all,
+    x="linear_fit_R2",
+    xlim=(0, 1),
+    y="Displacement_um",
+    ylim=(0, 1),
+    kind="kde",
+    color=color,
+)
+plt.xlabel(r"Linear Fitting R$^{2}$", weight="bold")
+plt.ylabel(r"Displacement, $\mu$m", weight="bold")
+plt.tight_layout()
+plt.savefig(
+    "unused-correlation_linearR2_displacement.png", format="png", bbox_inches="tight"
+)
+plt.close()
+
+##########################################
+# D distribution among the non contrained molecules
+data = df_all[df_all["linear_fit_R2"] > 0.7]
+data = data[data["mean_stepsize_nm"] > 50]
+data = data[data["alpha"] > 0.2]
 plt.figure(figsize=(5, 3), dpi=300)
 ax = sns.histplot(
-    data=df_all,
+    data=data,
     x="linear_fit_log10D",
     bins=40,
     stat="probability",
     color=color,
     kde=True,
-    binrange=(log10D_low - 1.5, log10D_high + 1.5),
+    binrange=(log10D_low - 0.5, log10D_high + 0.5),
     lw=3,
 )
 plt.axvspan(
-    log10D_low - 1.5, log10D_low, facecolor="dimgray", alpha=0.2, edgecolor="none"
+    log10D_low - 0.5, log10D_low, facecolor="dimgray", alpha=0.2, edgecolor="none"
 )
 plt.axvspan(
-    log10D_high, log10D_high + 1.5, facecolor="dimgray", alpha=0.2, edgecolor="none"
+    log10D_high, log10D_high + 0.5, facecolor="dimgray", alpha=0.2, edgecolor="none"
 )
 plt.text(
-    0.6,
-    0.085,
-    "N = " + str(df_all.shape[0]),
+    -0.6,
+    0.065,
+    "# Fitted Molecules = " + str(data.shape[0]),
     weight="bold",
+    fontsize=9,
     color="black",
 )
-plt.xlim(log10D_low - 1.5, log10D_high + 1.5)
+plt.xlim(log10D_low - 0.5, log10D_high + 0.5)
 plt.xlabel(r"log$_{10}$D ($\mu$m^2/s)", weight="bold")
 plt.ylabel("Probability", weight="bold")
 plt.savefig("ApparentD_linear_histo.png", format="png", bbox_inches="tight")
 plt.close()
 
+
+##########################################
+# Fitting of all mobile molecules except alpha < 0.2 bad fitting
+data = df_all[df_all["mean_stepsize_nm"] > 50]
+data = data[data["alpha"] > 0.2]
 plt.figure(figsize=(5, 3), dpi=300)
 ax = sns.histplot(
-    data=df_all,
+    data=data,
     x="linear_fit_R2",
     bins=40,
     stat="probability",
@@ -121,7 +223,7 @@ ax = sns.histplot(
     label="Linear",
 )
 sns.histplot(
-    data=df_all,
+    data=data,
     x="loglog_fit_R2",
     bins=40,
     stat="probability",
@@ -133,7 +235,7 @@ sns.histplot(
 )
 plt.legend()
 plt.xlim(0, 1)
-plt.xlabel(r"Linear Fitting R$^2$", weight="bold")
+plt.xlabel(r"Fitting R$^2$", weight="bold")
 plt.ylabel("Probability", weight="bold")
 plt.savefig("fitting_R2_histo.png", format="png", bbox_inches="tight")
 plt.close()
@@ -142,10 +244,11 @@ plt.close()
 ##########################################
 # alpha distribution
 plt.figure(figsize=(5, 3), dpi=300)
-df_alpha_possible = df_all[df_all["alpha"] < 1]
-df_alpha_possible = df_alpha_possible[df_alpha_possible["alpha"] > 0]
+data = df_all[df_all["alpha"] < 1]
+data = data[data["alpha"] > 0]
+data = data[data["mean_stepsize_nm"] > 50]
 ax = sns.histplot(
-    data=df_alpha_possible,
+    data=data,
     x="alpha",
     bins=40,
     stat="probability",
@@ -154,14 +257,14 @@ ax = sns.histplot(
     kde=True,
     lw=3,
 )
-plt.axvspan(0, 0.5, facecolor="#333232", alpha=0.2, edgecolor="none")
-plt.axvspan(0.5, 1, facecolor="#f7b801", alpha=0.2, edgecolor="none")
+plt.axvline(0.5, ls="--", color="dimgray", alpha=0.7)
 plt.text(
-    0.8,
-    0.0305,
-    "N = " + str(df_alpha_possible.shape[0]),
+    0.55,
+    0.06,
+    "# Mobile Molecules = " + str(data.shape[0]),
     weight="bold",
     color="black",
+    fontsize=9,
 )
 plt.xlim(0, 1)
 plt.xlabel(r"$\alpha$ Componenet)", weight="bold")
@@ -169,10 +272,12 @@ plt.ylabel("Probability", weight="bold")
 plt.savefig("alpha_histo.png", format="png", bbox_inches="tight")
 plt.close()
 
-
-# angle per step
+##########################################
+# angle per step distribution
+data = df_all[df_all["mean_stepsize_nm"] > 50]
+data = data[data["alpha"] > 0.2]
 lst_angle_arrays = []
-for array_like_string in df_all["list_of_angles"].to_list():
+for array_like_string in data["list_of_angles"].to_list():
     lst_angle_arrays.append(
         np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
     )
@@ -190,11 +295,12 @@ sns.histplot(
     lw=3,
 )
 plt.text(
-    90,
-    0.046,
-    "N = " + str(df_angles.shape[0]),
+    15,
+    0.049,
+    "# Mobile Molecules = " + str(df_angles.shape[0]),
     weight="bold",
     color="black",
+    fontsize=9,
 )
 plt.xlabel("Angle between Two Steps, Degree", weight="bold")
 plt.ylabel("Probability", weight="bold")
