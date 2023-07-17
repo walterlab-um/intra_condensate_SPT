@@ -33,9 +33,9 @@ log10D_high = np.log10(((um_per_pxl * link_max) ** 2) / ((8 / 3) * (s_per_frame)
 
 ##########################################
 # Localization error
-plt.figure(figsize=(5, 3), dpi=300)
+plt.figure(figsize=(5, 3), dpi=600)
 ax = sns.histplot(
-    data=df_all,
+    data=df_all[df_all["linear_fit_R2"] > 0.7],
     x="linear_fit_sigma",
     bins=40,
     stat="probability",
@@ -43,7 +43,7 @@ ax = sns.histplot(
     kde=True,
     lw=3,
 )
-plt.axvline(50, ls="--", color="dimgray", alpha=0.7)
+plt.axvline(40, ls="--", color="dimgray", alpha=0.7)
 plt.xlim(0, df_all["linear_fit_sigma"].max())
 plt.xlabel("Localization Error, nm", weight="bold")
 plt.ylabel("Probability", weight="bold")
@@ -52,7 +52,7 @@ plt.close()
 
 ##########################################
 # Mean step size (whether static molecule)
-plt.figure(figsize=(5, 3), dpi=300)
+plt.figure(figsize=(5, 3), dpi=600)
 ax = sns.histplot(
     data=df_all,
     x="mean_stepsize_nm",
@@ -62,13 +62,7 @@ ax = sns.histplot(
     kde=True,
     lw=3,
 )
-plt.axvspan(
-    df_all["mean_stepsize_nm"].min(),
-    threshold_disp,
-    facecolor="dimgray",
-    alpha=0.2,
-    edgecolor="none",
-)
+plt.axvline(40, ls="--", color="dimgray", alpha=0.7)
 plt.text(
     180,
     0.155,
@@ -85,47 +79,10 @@ plt.close()
 
 
 ##########################################
-# D distribution among the non contrained molecules
-data = df_all[df_all["linear_fit_R2"] > 0.7]
-data = data[data["mean_stepsize_nm"] > 25]
-data = data[data["alpha"] > 0.5]
-plt.figure(figsize=(5, 3), dpi=300)
-ax = sns.histplot(
-    data=data,
-    x="linear_fit_log10D",
-    bins=40,
-    stat="probability",
-    color=color,
-    kde=True,
-    binrange=(log10D_low - 0.5, log10D_high + 0.5),
-    lw=3,
-)
-plt.axvspan(
-    log10D_low - 0.5, log10D_low, facecolor="dimgray", alpha=0.2, edgecolor="none"
-)
-plt.axvspan(
-    log10D_high, log10D_high + 0.5, facecolor="dimgray", alpha=0.2, edgecolor="none"
-)
-plt.text(
-    -0.6,
-    0.065,
-    "# Fitted Molecules = " + str(data.shape[0]),
-    weight="bold",
-    fontsize=9,
-    color="black",
-)
-plt.xlim(log10D_low - 0.5, log10D_high + 0.5)
-plt.xlabel(r"log$_{10}$D ($\mu$m^2/s)", weight="bold")
-plt.ylabel("Probability", weight="bold")
-plt.savefig("ApparentD_linear_histo.png", format="png", bbox_inches="tight")
-plt.close()
-
-
-##########################################
 # Fitting R2 of all mobile molecules except alpha < 0.2 bad fitting
-data = df_all[df_all["mean_stepsize_nm"] > 25]
+data = df_all[df_all["mean_stepsize_nm"] > 40]
 data = data[data["alpha"] > 0.2]
-plt.figure(figsize=(5, 3), dpi=300)
+plt.figure(figsize=(5, 3), dpi=600)
 ax = sns.histplot(
     data=data,
     x="linear_fit_R2",
@@ -157,10 +114,11 @@ plt.close()
 
 ##########################################
 # alpha distribution
-plt.figure(figsize=(5, 3), dpi=300)
+plt.figure(figsize=(5, 3), dpi=600)
 data = df_all[df_all["alpha"] < 1]
 data = data[data["alpha"] > 0]
-data = data[data["mean_stepsize_nm"] > 25]
+data = data[data["mean_stepsize_nm"] > 40]
+data = data[data["loglog_fit_R2"] > 0.7]
 ax = sns.histplot(
     data=data,
     x="alpha",
@@ -173,9 +131,9 @@ ax = sns.histplot(
 )
 plt.axvline(0.5, ls="--", color="dimgray", alpha=0.7)
 plt.text(
-    0.55,
-    0.06,
-    "# Mobile Molecules = " + str(data.shape[0]),
+    0.56,
+    0.045,
+    "# Fitted Molecules = " + str(data.shape[0]),
     weight="bold",
     color="black",
     fontsize=9,
@@ -188,8 +146,8 @@ plt.close()
 
 ##########################################
 # angle per step distribution
-data = df_all[df_all["mean_stepsize_nm"] > 25]
-data = data[data["alpha"] > 0.2]
+data = df_all[df_all["mean_stepsize_nm"] > 40]
+data = data.dropna(subset=["list_of_angles"])
 lst_angle_arrays = []
 for array_like_string in data["list_of_angles"].to_list():
     lst_angle_arrays.append(
@@ -197,7 +155,7 @@ for array_like_string in data["list_of_angles"].to_list():
     )
 all_angles = np.concatenate(lst_angle_arrays)
 df_angles = pd.DataFrame({"angle": all_angles}, dtype=float)
-plt.figure(figsize=(5, 3), dpi=300)
+plt.figure(figsize=(5, 3), dpi=600)
 sns.histplot(
     data=df_angles,
     x="angle",
@@ -210,7 +168,7 @@ sns.histplot(
 )
 plt.text(
     15,
-    0.049,
+    0.056,
     "# Mobile Molecules = " + str(df_angles.shape[0]),
     weight="bold",
     color="black",
@@ -223,4 +181,41 @@ bins = np.linspace(-180, 180, 10).astype(int)
 plt.xticks(bins)
 plt.tight_layout()
 plt.savefig("angle_histo.png", format="png", bbox_inches="tight")
+plt.close()
+
+
+##########################################
+# D distribution among the non contrained molecules
+data = df_all[df_all["linear_fit_R2"] > 0.7]
+data = data[data["mean_stepsize_nm"] > 40]
+data = data[data["alpha"] > 0.5]
+plt.figure(figsize=(5, 3), dpi=600)
+ax = sns.histplot(
+    data=data,
+    x="linear_fit_log10D",
+    bins=40,
+    stat="probability",
+    color=color,
+    kde=True,
+    binrange=(log10D_low - 0.5, log10D_high + 0.5),
+    lw=3,
+)
+plt.axvspan(
+    log10D_low - 0.5, log10D_low, facecolor="dimgray", alpha=0.2, edgecolor="none"
+)
+plt.axvspan(
+    log10D_high, log10D_high + 0.5, facecolor="dimgray", alpha=0.2, edgecolor="none"
+)
+plt.text(
+    -0.45,
+    0.075,
+    "# Fitted Molecules = " + str(data.shape[0]),
+    weight="bold",
+    fontsize=9,
+    color="black",
+)
+plt.xlim(log10D_low - 0.5, log10D_high + 0.5)
+plt.xlabel(r"log$_{10}$D ($\mu$m^2/s)", weight="bold")
+plt.ylabel("Probability", weight="bold")
+plt.savefig("ApparentD_linear_histo.png", format="png", bbox_inches="tight")
 plt.close()
