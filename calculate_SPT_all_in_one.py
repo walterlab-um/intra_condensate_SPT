@@ -41,6 +41,7 @@ columns = [
     "list_of_y",
     "N_steps",
     "Displacement_um",
+    "mean_stepsize_nm",
     "mean_x_pxl",
     "mean_y_pxl",
     "mean_spot_intensity_max_in_track",
@@ -125,19 +126,40 @@ for fpath in track(lst_fpath):
     for trackID in lst_trackID_in_file:
         df_current_track = df_current_file[df_current_file.trackID == trackID]
         tracklength = df_current_track.shape[0]
-        if tracklength < tracklength_threshold:
-            continue
 
         x = df_current_track["x"].to_numpy(dtype=float)
         y = df_current_track["y"].to_numpy(dtype=float)
         disp_um = np.sqrt((x[-1] - x[0]) ** 2 + (y[-1] - y[0]) ** 2) * um_per_pixel
-
+        mean_stepsize_nm = (
+            np.mean(np.sqrt((x[1:] - x[:-1]) ** 2 + (y[1:] - y[:-1]) ** 2))
+            * um_per_pixel
+            * 1000
+        )
         lags = np.arange(1, tracklength - 2)
         lags_phys = lags * s_per_frame
         MSDs = calc_MSD_NonPhysUnit(df_current_track, lags)
-        if np.any(MSDs == 0):  # remove any track with zero MSD
-            continue
         MSDs_phys = MSDs * (um_per_pixel**2)  # um^2
+
+        # save for short tracks that are not suitable for MSD-tau fitting
+        if tracklength < tracklength_threshold or np.any(MSDs == 0):
+            # Save
+            new_row = [
+                trackID,
+                df_current_track["t"].to_list(),
+                df_current_track["x"].to_list(),
+                df_current_track["y"].to_list(),
+                tracklength,
+                disp_um,
+                mean_stepsize_nm,
+                x.mean(),
+                y.mean(),
+                df_current_track["meanIntensity"].max(),  # max of mean spot intensity
+                MSDs_phys.tolist(),
+                lags_phys.tolist(),
+            ]
+            new_row = new_row + np.repeat(np.nan, len(columns) - len(new_row)).tolist()
+            lst_rows_of_df.append(new_row)
+            continue
 
         # D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
         # diffusion dimension = 2. Note: This is the dimension of the measured data, not the actual movements! Although particles are doing 3D diffussion, the microscopy data is a projection on 2D plane and thus should be treated as 2D diffusion!
@@ -146,10 +168,14 @@ for fpath in track(lst_fpath):
         slope_linear, intercept_linear, R_linear, P, std_err = stats.linregress(
             lags_linear * s_per_frame, MSDs_phys[: len(lags_linear)]
         )
-        if (slope_linear > 0) & (intercept_linear > 0):
+        if slope_linear > 0:
+            # Actually, if any of the slope or intercept is negative, the model does not technically fit. However, it seems faster molecules will more likely to ended up with very good fitting with a small negative intercept. It's not reasonable to exclude these molecules. Therefore, move the if statement for intercept to inside so these fast molecules are recorded.
             D_phys_linear = slope_linear / (8 / 3)  # um^2/s
             log10D_linear = np.log10(D_phys_linear)
-            sigma_phys = np.sqrt(intercept_linear / 4) * 1000  # nm
+            if intercept_linear >= 0:
+                sigma_phys = np.sqrt(intercept_linear / 4) * 1000  # nm
+            else:
+                sigma_phys = np.NaN
         else:
             D_phys_linear = np.NaN
             log10D_linear = np.NaN
@@ -178,6 +204,7 @@ for fpath in track(lst_fpath):
             df_current_track["y"].to_list(),
             tracklength,
             disp_um,
+            mean_stepsize_nm,
             x.mean(),
             y.mean(),
             df_current_track["meanIntensity"].max(),  # max of mean spot intensity
