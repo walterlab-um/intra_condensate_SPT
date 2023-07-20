@@ -1,6 +1,7 @@
 from os.path import join, dirname, basename
 import scipy.stats as stats
 import numpy as np
+from scipy.spatial import ConvexHull
 import pandas as pd
 from tkinter import filedialog as fd
 from rich.progress import track
@@ -38,8 +39,9 @@ columns = [
     "list_of_x",
     "list_of_y",
     "N_steps",
-    "Displacement_um",
+    "displacement_nm",
     "mean_stepsize_nm",
+    "equivalent_d_nm",  # of the area a molecule surveyed
     "mean_x_pxl",
     "mean_y_pxl",
     "mean_spot_intensity_max_in_track",
@@ -127,7 +129,9 @@ for fpath in track(lst_fpath):
 
         x = df_current_track["x"].to_numpy(dtype=float)
         y = df_current_track["y"].to_numpy(dtype=float)
-        disp_um = np.sqrt((x[-1] - x[0]) ** 2 + (y[-1] - y[0]) ** 2) * um_per_pixel
+        disp_nm = (
+            np.sqrt((x[-1] - x[0]) ** 2 + (y[-1] - y[0]) ** 2) * um_per_pixel * 1000
+        )
         mean_stepsize_nm = (
             np.mean(np.sqrt((x[1:] - x[:-1]) ** 2 + (y[1:] - y[:-1]) ** 2))
             * um_per_pixel
@@ -143,6 +147,13 @@ for fpath in track(lst_fpath):
         _, counts_y = np.unique(y, return_counts=True)
         if counts_x.max() > 2 or counts_y.max() > 2:
             continue
+
+        ## To determine if a molecuel is static or mobile, independent of Einstein's diffusion equation, the equivalent diameter is calculated from the convex hull of all positions within a track, namely the space a molecule has surveyed.
+        points_coordinates_nm = np.stack([x, y], axis=-1) * um_per_pixel * 1000
+        convex_area_nm2 = ConvexHull(
+            points_coordinates_nm
+        ).volume  # bug fix: ConvexHull.area is perimeter in 2d
+        equivalent_d_nm = np.sqrt(convex_area_nm2 / np.pi) * 2
 
         ## D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
 
@@ -193,8 +204,9 @@ for fpath in track(lst_fpath):
             df_current_track["x"].to_list(),
             df_current_track["y"].to_list(),
             tracklength,
-            disp_um,
+            disp_nm,
             mean_stepsize_nm,
+            equivalent_d_nm,
             x.mean(),
             y.mean(),
             df_current_track["meanIntensity"].max(),  # max of mean spot intensity
