@@ -9,7 +9,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 
 ## Calculate all SPT properties posible (based on classical diffusion models) and store them together with the raw data in an AIO (all in one) format. One AIO file is saved for each individual input file.
-
+## By default, the tracks are already >= 5 frames, enough for the 3-points MSD-tau fitting.
 
 # scalling factors for physical units
 print("Default scaling factors: s_per_frame = 0.02, um_per_pixel = 0.117")
@@ -139,27 +139,6 @@ for fpath in track(lst_fpath):
         lags_phys = lags * s_per_frame
         MSDs = calc_MSD_NonPhysUnit(df_current_track, lags)
         MSDs_phys = MSDs * (um_per_pixel**2)  # um^2
-
-        # save for short tracks that are not suitable for MSD-tau fitting
-        if tracklength < tracklength_threshold or np.any(MSDs == 0):
-            # Save
-            new_row = [
-                trackID,
-                df_current_track["t"].to_list(),
-                df_current_track["x"].to_list(),
-                df_current_track["y"].to_list(),
-                tracklength,
-                disp_um,
-                mean_stepsize_nm,
-                x.mean(),
-                y.mean(),
-                df_current_track["meanIntensity"].max(),  # max of mean spot intensity
-                MSDs_phys.tolist(),
-                lags_phys.tolist(),
-            ]
-            new_row = new_row + np.repeat(np.nan, len(columns) - len(new_row)).tolist()
-            lst_rows_of_df.append(new_row)
-            continue
 
         # D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
         # diffusion dimension = 2. Note: This is the dimension of the measured data, not the actual movements! Although particles are doing 3D diffussion, the microscopy data is a projection on 2D plane and thus should be treated as 2D diffusion!
