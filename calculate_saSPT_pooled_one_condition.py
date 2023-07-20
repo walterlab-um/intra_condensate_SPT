@@ -21,10 +21,10 @@ saSPT_settings = dict(
     progress_bar=True,
 )
 
-print("Choose the SPT_results_AIO_concat-xxxxx.csv file for one condition:")
-fpath_concat = fd.askopenfilename()
-df_concat = pd.read_csv(fpath_concat)
-data_folder = dirname(fpath_concat)
+print("Choose the SPT_results_AIO_single_condition-xxxxx.csv file for one condition:")
+fpath_single_condition = fd.askopenfilename()
+df_single_condition = pd.read_csv(fpath_single_condition)
+data_folder = dirname(fpath_single_condition)
 os.chdir(data_folder)
 
 # Displacement threshold for non static molecules
@@ -33,24 +33,20 @@ threshold_disp = 0.2  # unit: um
 
 
 def reformat_for_saSPT(df_AIO):
-    global threshold_disp
-
-    df_mobile = df_AIO[df_AIO["Displacement_um"] >= threshold_disp]
-
     lst_x = []
-    for array_like_string in df_mobile["list_of_x"].to_list():
+    for array_like_string in df_AIO["list_of_x"].to_list():
         lst_x.append(np.fromstring(array_like_string[1:-1], sep=", ", dtype=float))
     all_x = np.concatenate(lst_x)
 
     lst_y = []
-    for array_like_string in df_mobile["list_of_y"].to_list():
+    for array_like_string in df_AIO["list_of_y"].to_list():
         lst_y.append(np.fromstring(array_like_string[1:-1], sep=", ", dtype=float))
     all_y = np.concatenate(lst_y)
 
     lst_frame = []
     lst_trackID = []
     trackID = 0
-    for array_like_string in df_mobile["list_of_t"].to_list():
+    for array_like_string in df_AIO["list_of_t"].to_list():
         array_frame = np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
         lst_frame.append(array_frame)
         lst_trackID.append(np.ones_like(array_frame) * trackID)
@@ -71,11 +67,26 @@ def reformat_for_saSPT(df_AIO):
     return df_saSPT_input
 
 
-df_saSPT_input = reformat_for_saSPT(df_concat)
+## For all molecules
 
+df_saSPT_input = reformat_for_saSPT(df_single_condition)
 # saSPT
 SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
 df_save = SA.occupations_dataframe
-fname_save = "saSPT-pooled-" + basename(fpath_concat).split("concat-")[-1]
+fname_save = "saSPT-pooled-all-" + basename(fpath_single_condition).split("concat-")[-1]
 df_save.to_csv(fname_save, index=False)
-SA.plot_occupations(fname_save[:-4] + ".png")
+# SA.plot_occupations(fname_save[:-4] + ".png")
+
+
+## For only mobile molecules
+
+df_mobile = df_single_condition[df_single_condition["equivalent_d_nm"] > 200]
+df_saSPT_input = reformat_for_saSPT(df_mobile)
+# saSPT
+SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
+df_save = SA.occupations_dataframe
+fname_save = (
+    "saSPT-pooled-mobile-" + basename(fpath_single_condition).split("concat-")[-1]
+)
+df_save.to_csv(fname_save, index=False)
+# SA.plot_occupations(fname_save[:-4] + ".png")
