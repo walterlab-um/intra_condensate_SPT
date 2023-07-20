@@ -12,21 +12,19 @@ pd.options.mode.chained_assignment = None  # default='warn'
 ## By default, the tracks are already >= 5 frames, enough for the 3-points MSD-tau fitting.
 
 # scalling factors for physical units
-print("Default scaling factors: s_per_frame = 0.02, um_per_pixel = 0.117")
-# print("micron per pixel:")
-# um_per_pixel = float(input())
 um_per_pixel = 0.117
-# print("Enter the time between frames (seconds):")
-# s_per_frame = float(input())
 s_per_frame = 0.02
+print(
+    "Scaling factors: s_per_frame = "
+    + str(s_per_frame)
+    + ", um_per_pixel = "
+    + str(um_per_pixel)
+)
+
 
 print("Choose the RNA track csv files for processing:")
 lst_fpath = list(fd.askopenfilenames())
-tracklength_threshold = 8  # must be 3 + max{len(lags_linear), len(lags_loglog)}
-# lag times for linear MSD-tau fitting (unit: frame)
-lags_linear = np.arange(1, 6, 1)
-# lag times for log-log MSD-tau fitting (unit: frame)
-lags_loglog = np.arange(1, 6, 1)
+
 
 # Output file columns
 angle_bins = np.linspace(0, 180, 7).astype(int)  # #boundaries = #bins + 1
@@ -135,17 +133,24 @@ for fpath in track(lst_fpath):
             * um_per_pixel
             * 1000
         )
-        lags = np.arange(1, tracklength - 2)
-        lags_phys = lags * s_per_frame
+        lags = np.arange(1, tracklength)
         MSDs = calc_MSD_NonPhysUnit(df_current_track, lags)
+        lags_phys = lags * s_per_frame
         MSDs_phys = MSDs * (um_per_pixel**2)  # um^2
 
-        # D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
+        ## D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
+
+        # From the paper's fig 7, the optimal number of fitting points p_min is almost always roughly half of total MSD points, with a minimum p_min = 3 (asuming error x > 1)
+        if round(lags.shape[0] / 2) < 3:
+            lags_to_fit = lags[:3]
+        else:
+            lags_to_fit = lags[: round(lags.shape[0] / 2)]
+
         # diffusion dimension = 2. Note: This is the dimension of the measured data, not the actual movements! Although particles are doing 3D diffussion, the microscopy data is a projection on 2D plane and thus should be treated as 2D diffusion!
         # MSD = 2 n D tau + 2 n sigma^2 - 4 n R D tau, n=2, R=1/6
         # Therefore, slope = (2n-4nR)D = (8/3) D; intercept = 2 n sigma^2
         slope_linear, intercept_linear, R_linear, P, std_err = stats.linregress(
-            lags_linear * s_per_frame, MSDs_phys[: len(lags_linear)]
+            lags_to_fit * s_per_frame, MSDs_phys[: len(lags_to_fit)]
         )
         if slope_linear > 0:
             # Actually, if any of the slope or intercept is negative, the model does not technically fit. However, it seems faster molecules will more likely to ended up with very good fitting with a small negative intercept. It's not reasonable to exclude these molecules. Therefore, move the if statement for intercept to inside so these fast molecules are recorded.
@@ -164,8 +169,8 @@ for fpath in track(lst_fpath):
         # log(MSD) = alpha * log(tau) + log(D) + log(4)
         # Therefore, slope = alpha; intercept = log(D) + log(4)
         slope_loglog, intercept_loglog, R_loglog, P, std_err = stats.linregress(
-            np.log10(lags_loglog * s_per_frame),
-            np.log10(MSDs_phys[: len(lags_loglog)]),
+            np.log10(lags_to_fit * s_per_frame),
+            np.log10(MSDs_phys[: len(lags_to_fit)]),
         )
         log10D_loglog = intercept_loglog - np.log10(4)
         alpha = slope_loglog
