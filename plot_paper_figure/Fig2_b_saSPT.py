@@ -1,5 +1,5 @@
 import os
-from os.path import dirname, join
+from os.path import dirname, join, basename
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import pandas as pd
@@ -11,7 +11,7 @@ sns.set(color_codes=True, style="white")
 
 # plot saSPT results for all replicates in a single condition
 # Must pool together, because the dataset size only fullfill saSPT's requirements when it's pooled.
-fpath_data = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig2_diffusion analysis/saSPT-pooled-0Dex_noTR_0hr.csv"
+fpath_data = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig2_diffusion analysis/saSPT-pooled-mobile-0Dex_noTR_0hr-200convexd.csv"
 os.chdir(dirname(fpath_data))
 
 # for D distribution
@@ -70,11 +70,7 @@ plt.ylim(plt_ylim[0], plt_ylim[1])
 plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold")
 plt.ylabel("SA Occupation", weight="bold")
 plt.tight_layout()
-plt.savefig(
-    join(dirname(fpath_data), "saSPT_pooled-0Dex_noTR_0hr.png"),
-    format="png",
-    bbox_inches="tight",
-)
+plt.savefig(basename(fpath_data)[:-4] + ".png", format="png", bbox_inches="tight")
 plt.close()
 
 
@@ -112,7 +108,11 @@ ax = sns.heatmap(
     xticklabels=10,
     yticklabels=7,
     cbar=True,
-    cbar_kws={"orientation": "horizontal"},
+    cbar_kws={
+        "orientation": "horizontal",
+        "pad": 0.2,
+        "label": "Occupation",
+    },
 )
 ax.invert_yaxis()
 ax.tick_params(axis="both", which="major", labelsize=11)
@@ -120,9 +120,5 @@ plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold")
 plt.ylabel("Localization Error, nm", weight="bold")
 plt.axis("scaled")
 plt.tight_layout()
-plt.savefig(
-    join(dirname(fpath_data), "saSPT_pooled-0Dex_noTR_0hr-SA.png"),
-    format="png",
-    bbox_inches="tight",
-)
+plt.savefig(basename(fpath_data)[:-4] + "-SA.png", format="png", bbox_inches="tight")
 plt.close()
