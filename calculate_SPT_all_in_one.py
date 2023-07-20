@@ -138,6 +138,12 @@ for fpath in track(lst_fpath):
         lags_phys = lags * s_per_frame
         MSDs_phys = MSDs * (um_per_pixel**2)  # um^2
 
+        ## Remove artificial tracks from dead pixels, which will have fixed value x or y like [105.0, 106.0, 105.0, 105.0, 105.0, 105.0, 106.0]
+        _, counts_x = np.unique(x, return_counts=True)
+        _, counts_y = np.unique(y, return_counts=True)
+        if counts_x.max() > 2 or counts_y.max() > 2:
+            continue
+
         ## D formula with errors (MSD: um^2, t: s, D: um^2/s, n: dimension, R: motion blur coefficient; doi:10.1103/PhysRevE.85.061916)
 
         # From the paper's fig 7, the optimal number of fitting points p_min is almost always roughly half of total MSD points, with a minimum p_min = 3 (asuming error x > 1)
