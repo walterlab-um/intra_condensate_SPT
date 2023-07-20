@@ -13,7 +13,7 @@ color = "#9a3324"
 fpath_concat = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig2_diffusion analysis/SPT_results_AIO_concat-0Dex_noTR_0hr.csv"
 
 
-threshold_disp = 0.2  # unit: um
+threshold_equivalent_d_nm = 40  # unit: um
 df_all = pd.read_csv(fpath_concat)
 os.chdir(dirname(fpath_concat))
 
@@ -43,7 +43,7 @@ ax = sns.histplot(
     kde=True,
     lw=3,
 )
-plt.axvline(40, ls="--", color="dimgray", alpha=0.7)
+plt.axvline(threshold_equivalent_d_nm, ls="--", color="dimgray", alpha=0.7)
 plt.xlim(0, df_all["linear_fit_sigma"].max())
 plt.xlabel("Localization Error, nm", weight="bold")
 plt.ylabel("Probability", weight="bold")
@@ -51,36 +51,36 @@ plt.savefig("LocError_histo.png", format="png", bbox_inches="tight")
 plt.close()
 
 ##########################################
-# Mean step size (whether static molecule)
+# Convex Hull Equivalent Diameter (whether static molecule)
 plt.figure(figsize=(5, 3), dpi=600)
 ax = sns.histplot(
     data=df_all,
-    x="mean_stepsize_nm",
+    x="equivalent_d_nm",
     bins=40,
     stat="probability",
     color=color,
     kde=True,
     lw=3,
 )
-plt.axvline(40, ls="--", color="dimgray", alpha=0.7)
+plt.axvline(threshold_equivalent_d_nm, ls="--", color="dimgray", alpha=0.7)
 plt.text(
-    180,
-    0.155,
+    650,
+    0.26,
     "# Molecuels = " + str(df_all.shape[0]),
     weight="bold",
     fontsize=11,
     color="black",
 )
-plt.xlim(0, 300)
-plt.xlabel("Trajectory Mean Step Size, nm", weight="bold")
+plt.xlim(0, df_all["equivalent_d_nm"].max())
+plt.xlabel("Convex Hull Equivalent Diameter, nm", weight="bold")
 plt.ylabel("Probability", weight="bold")
-plt.savefig("Mean_stepsize_histo.png", format="png", bbox_inches="tight")
+plt.savefig("equivalent_d_nm_histo.png", format="png", bbox_inches="tight")
 plt.close()
 
 
 ##########################################
 # Fitting R2 of all mobile molecules except alpha < 0.2 bad fitting
-data = df_all[df_all["mean_stepsize_nm"] > 40]
+data = df_all[df_all["equivalent_d_nm"] > threshold_equivalent_d_nm]
 data = data[data["alpha"] > 0.2]
 plt.figure(figsize=(5, 3), dpi=600)
 ax = sns.histplot(
@@ -117,7 +117,7 @@ plt.close()
 plt.figure(figsize=(5, 3), dpi=600)
 data = df_all[df_all["alpha"] < 1]
 data = data[data["alpha"] > 0]
-data = data[data["mean_stepsize_nm"] > 40]
+data = data[data["equivalent_d_nm"] > threshold_equivalent_d_nm]
 data = data[data["loglog_fit_R2"] > 0.7]
 ax = sns.histplot(
     data=data,
@@ -146,7 +146,7 @@ plt.close()
 
 ##########################################
 # angle per step distribution
-data = df_all[df_all["mean_stepsize_nm"] > 40]
+data = df_all[df_all["equivalent_d_nm"] > threshold_equivalent_d_nm]
 data = data.dropna(subset=["list_of_angles"])
 lst_angle_arrays = []
 for array_like_string in data["list_of_angles"].to_list():
@@ -187,7 +187,7 @@ plt.close()
 ##########################################
 # D distribution among the non contrained molecules
 data = df_all[df_all["linear_fit_R2"] > 0.7]
-data = data[data["mean_stepsize_nm"] > 40]
+data = data[data["equivalent_d_nm"] > threshold_equivalent_d_nm]
 data = data[data["alpha"] > 0.5]
 plt.figure(figsize=(5, 3), dpi=600)
 ax = sns.histplot(
