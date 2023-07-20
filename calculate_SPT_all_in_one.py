@@ -149,8 +149,12 @@ for fpath in track(lst_fpath):
             continue
 
         ## To determine if a molecuel is static or mobile, independent of Einstein's diffusion equation
-        max_d_anytwo_nm = np.max(
-            np.sqrt((x - np.atleast_2d(x).T) ** 2 + (y - np.atleast_2d(y).T) ** 2)
+        max_d_anytwo_nm = (
+            np.max(
+                np.sqrt((x - np.atleast_2d(x).T) ** 2 + (y - np.atleast_2d(y).T) ** 2)
+            )
+            * um_per_pixel
+            * 1000
         )
         # equivalent diameter is calculated from the convex hull of all positions within a track, namely the space a molecule has surveyed.
         # points_coordinates_nm = np.stack([x, y], axis=-1) * um_per_pixel * 1000
