@@ -3,7 +3,6 @@ from os.path import dirname
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import scipy.stats as stats
 import seaborn as sns
 
 sns.set(color_codes=True, style="white")
@@ -115,31 +114,31 @@ plt.close()
 ##########################################
 # alpha distribution
 plt.figure(figsize=(5, 3), dpi=600)
-data = df_all[df_all["alpha"] < 1]
-data = data[data["alpha"] > 0]
-data = data[data["equivalent_d_nm"] > threshold_equivalent_d_nm]
+data = df_all[df_all["equivalent_d_nm"] > threshold_equivalent_d_nm]
 data = data[data["loglog_fit_R2"] > 0.7]
+data = data[data["alpha"] > 0.2]
+# data = data[data["alpha"] < 1]
 ax = sns.histplot(
     data=data,
     x="alpha",
     bins=40,
     stat="probability",
     color=color,
-    binrange=(0, 1),
+    binrange=(0.2, data["alpha"].max()),
     kde=True,
     lw=3,
 )
-plt.axvline(0.5, ls="--", color="dimgray", alpha=0.7)
+plt.axvline(0.7, ls="--", color="dimgray", alpha=0.7)
 plt.text(
-    0.56,
-    0.045,
+    1.25,
+    0.071,
     "# Fitted Molecules = " + str(data.shape[0]),
     weight="bold",
     color="black",
     fontsize=9,
 )
-plt.xlim(0, 1)
-plt.xlabel(r"$\alpha$ Componenet)", weight="bold")
+plt.xlim(0.2, data["alpha"].max())
+plt.xlabel(r"$\alpha$ Componenet", weight="bold")
 plt.ylabel("Probability", weight="bold")
 plt.savefig("alpha_histo.png", format="png", bbox_inches="tight")
 plt.close()
@@ -147,6 +146,8 @@ plt.close()
 ##########################################
 # angle per step distribution
 data = df_all[df_all["equivalent_d_nm"] > threshold_equivalent_d_nm]
+data = data[data["alpha"] < 0.5]
+data = data[data["alpha"] > 0.2]
 data = data.dropna(subset=["list_of_angles"])
 lst_angle_arrays = []
 for array_like_string in data["list_of_angles"].to_list():
@@ -167,9 +168,9 @@ sns.histplot(
     lw=3,
 )
 plt.text(
-    15,
-    0.056,
-    "# Mobile Molecules = " + str(df_angles.shape[0]),
+    50,
+    0.055,
+    "# Molecules = " + str(df_angles.shape[0]),
     weight="bold",
     color="black",
     fontsize=9,
@@ -177,10 +178,51 @@ plt.text(
 plt.xlabel("Angle between Two Steps, Degree", weight="bold")
 plt.ylabel("Probability", weight="bold")
 plt.xlim(-180, 180)
+plt.ylim(0, 0.06)
 bins = np.linspace(-180, 180, 10).astype(int)
 plt.xticks(bins)
 plt.tight_layout()
-plt.savefig("angle_histo.png", format="png", bbox_inches="tight")
+plt.savefig("angle_histo_constrained.png", format="png", bbox_inches="tight")
+plt.close()
+
+
+data = df_all[df_all["equivalent_d_nm"] > threshold_equivalent_d_nm]
+data = data[data["alpha"] > 1.1]
+data = data.dropna(subset=["list_of_angles"])
+lst_angle_arrays = []
+for array_like_string in data["list_of_angles"].to_list():
+    lst_angle_arrays.append(
+        np.fromstring(array_like_string[1:-1], sep=", ", dtype=float)
+    )
+all_angles = np.concatenate(lst_angle_arrays)
+df_angles = pd.DataFrame({"angle": all_angles}, dtype=float)
+plt.figure(figsize=(5, 3), dpi=600)
+sns.histplot(
+    data=df_angles,
+    x="angle",
+    bins=40,
+    stat="probability",
+    color=color,
+    binrange=(-180, 180),
+    alpha=0.5,
+    lw=3,
+)
+plt.text(
+    50,
+    0.055,
+    "# Molecules = " + str(df_angles.shape[0]),
+    weight="bold",
+    color="black",
+    fontsize=9,
+)
+plt.xlabel("Angle between Two Steps, Degree", weight="bold")
+plt.ylabel("Probability", weight="bold")
+plt.xlim(-180, 180)
+plt.ylim(0, 0.06)
+bins = np.linspace(-180, 180, 10).astype(int)
+plt.xticks(bins)
+plt.tight_layout()
+plt.savefig("angle_histo_mobile.png", format="png", bbox_inches="tight")
 plt.close()
 
 
@@ -188,7 +230,7 @@ plt.close()
 # D distribution among the non contrained molecules
 data = df_all[df_all["linear_fit_R2"] > 0.7]
 data = data[data["equivalent_d_nm"] > threshold_equivalent_d_nm]
-data = data[data["alpha"] > 0.5]
+data = data[data["alpha"] > 0.2]
 plt.figure(figsize=(5, 3), dpi=600)
 ax = sns.histplot(
     data=data,
@@ -197,24 +239,24 @@ ax = sns.histplot(
     stat="probability",
     color=color,
     kde=True,
-    binrange=(log10D_low - 0.5, log10D_high + 0.5),
+    binrange=(log10D_low - 1.5, log10D_high + 1.5),
     lw=3,
 )
 plt.axvspan(
-    log10D_low - 0.5, log10D_low, facecolor="dimgray", alpha=0.2, edgecolor="none"
+    log10D_low - 1.5, log10D_low, facecolor="dimgray", alpha=0.2, edgecolor="none"
 )
 plt.axvspan(
-    log10D_high, log10D_high + 0.5, facecolor="dimgray", alpha=0.2, edgecolor="none"
+    log10D_high, log10D_high + 1.5, facecolor="dimgray", alpha=0.2, edgecolor="none"
 )
 plt.text(
-    -0.45,
-    0.075,
+    -0.4,
+    0.08,
     "# Fitted Molecules = " + str(data.shape[0]),
     weight="bold",
     fontsize=9,
     color="black",
 )
-plt.xlim(log10D_low - 0.5, log10D_high + 0.5)
+plt.xlim(log10D_low - 1.5, log10D_high + 1.5)
 plt.xlabel(r"log$_{10}$D ($\mu$m^2/s)", weight="bold")
 plt.ylabel("Probability", weight="bold")
 plt.savefig("ApparentD_linear_histo.png", format="png", bbox_inches="tight")
