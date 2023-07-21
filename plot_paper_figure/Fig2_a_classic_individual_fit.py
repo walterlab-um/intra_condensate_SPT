@@ -12,7 +12,7 @@ color = "#9a3324"
 fpath_concat = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig2_diffusion analysis/SPT_results_AIO_concat-0Dex_noTR_0hr.csv"
 
 
-threshold_equivalent_d_nm = 40  # unit: um
+threshold_max_d_anytwo_nm = 200  # unit: um
 df_all = pd.read_csv(fpath_concat)
 os.chdir(dirname(fpath_concat))
 
@@ -32,9 +32,11 @@ log10D_high = np.log10(((um_per_pxl * link_max) ** 2) / ((8 / 3) * (s_per_frame)
 
 ##########################################
 # Localization error
-plt.figure(figsize=(5, 3), dpi=600)
+data = df_all[df_all["max_d_anytwo_nm"] > threshold_max_d_anytwo_nm]
+data = data[data["linear_fit_R2"] > 0.7]
+plt.figure(figsize=(5, 3), dpi=300)
 ax = sns.histplot(
-    data=df_all[df_all["linear_fit_R2"] > 0.7],
+    data=data,
     x="linear_fit_sigma",
     bins=40,
     stat="probability",
@@ -42,7 +44,15 @@ ax = sns.histplot(
     kde=True,
     lw=3,
 )
-plt.axvline(threshold_equivalent_d_nm, ls="--", color="dimgray", alpha=0.7)
+plt.text(
+    90,
+    0.125,
+    "# Fitted Molecules = " + str(data.shape[0]),
+    weight="bold",
+    color="black",
+    fontsize=9,
+)
+plt.axvline(threshold_max_d_anytwo_nm, ls="--", color="dimgray", alpha=0.7)
 plt.xlim(0, df_all["linear_fit_sigma"].max())
 plt.xlabel("Localization Error, nm", weight="bold")
 plt.ylabel("Probability", weight="bold")
@@ -50,38 +60,38 @@ plt.savefig("LocError_histo.png", format="png", bbox_inches="tight")
 plt.close()
 
 ##########################################
-# Convex Hull Equivalent Diameter (whether static molecule)
-plt.figure(figsize=(5, 3), dpi=600)
+# Maximum Distance (whether static molecule)
+plt.figure(figsize=(5, 3), dpi=300)
 ax = sns.histplot(
     data=df_all,
-    x="equivalent_d_nm",
+    x="max_d_anytwo_nm",
     bins=40,
     stat="probability",
     color=color,
     kde=True,
     lw=3,
 )
-plt.axvline(threshold_equivalent_d_nm, ls="--", color="dimgray", alpha=0.7)
+plt.axvline(threshold_max_d_anytwo_nm, ls="--", color="dimgray", alpha=0.7)
 plt.text(
-    650,
-    0.26,
+    1050,
+    0.28,
     "# Molecuels = " + str(df_all.shape[0]),
     weight="bold",
     fontsize=11,
     color="black",
 )
-plt.xlim(0, df_all["equivalent_d_nm"].max())
-plt.xlabel("Convex Hull Equivalent Diameter, nm", weight="bold")
+plt.xlim(0, df_all["max_d_anytwo_nm"].max())
+plt.xlabel("Maximum Distance, nm", weight="bold")
 plt.ylabel("Probability", weight="bold")
-plt.savefig("equivalent_d_nm_histo.png", format="png", bbox_inches="tight")
+plt.savefig("max_d_anytwo_nm_histo.png", format="png", bbox_inches="tight")
 plt.close()
 
 
 ##########################################
 # Fitting R2 of all mobile molecules except alpha < 0.2 bad fitting
-data = df_all[df_all["equivalent_d_nm"] > threshold_equivalent_d_nm]
+data = df_all[df_all["max_d_anytwo_nm"] > threshold_max_d_anytwo_nm]
 data = data[data["alpha"] > 0.2]
-plt.figure(figsize=(5, 3), dpi=600)
+plt.figure(figsize=(5, 3), dpi=300)
 ax = sns.histplot(
     data=data,
     x="linear_fit_R2",
@@ -113,31 +123,30 @@ plt.close()
 
 ##########################################
 # alpha distribution
-plt.figure(figsize=(5, 3), dpi=600)
-data = df_all[df_all["equivalent_d_nm"] > threshold_equivalent_d_nm]
+plt.figure(figsize=(5, 3), dpi=300)
+data = df_all[df_all["max_d_anytwo_nm"] > threshold_max_d_anytwo_nm]
 data = data[data["loglog_fit_R2"] > 0.7]
-data = data[data["alpha"] > 0.2]
-# data = data[data["alpha"] < 1]
+data = data[data["alpha"] > 0]
 ax = sns.histplot(
     data=data,
     x="alpha",
     bins=40,
     stat="probability",
     color=color,
-    binrange=(0.2, data["alpha"].max()),
+    binrange=(0, data["alpha"].max()),
     kde=True,
     lw=3,
 )
 plt.axvline(0.7, ls="--", color="dimgray", alpha=0.7)
 plt.text(
-    1.25,
-    0.071,
+    1.15,
+    0.065,
     "# Fitted Molecules = " + str(data.shape[0]),
     weight="bold",
     color="black",
     fontsize=9,
 )
-plt.xlim(0.2, data["alpha"].max())
+plt.xlim(0, data["alpha"].max())
 plt.xlabel(r"$\alpha$ Componenet", weight="bold")
 plt.ylabel("Probability", weight="bold")
 plt.savefig("alpha_histo.png", format="png", bbox_inches="tight")
@@ -145,7 +154,7 @@ plt.close()
 
 ##########################################
 # angle per step distribution
-data = df_all[df_all["equivalent_d_nm"] > threshold_equivalent_d_nm]
+data = df_all[df_all["max_d_anytwo_nm"] > threshold_max_d_anytwo_nm]
 data = data[data["alpha"] < 0.5]
 data = data[data["alpha"] > 0.2]
 data = data.dropna(subset=["list_of_angles"])
@@ -156,7 +165,7 @@ for array_like_string in data["list_of_angles"].to_list():
     )
 all_angles = np.concatenate(lst_angle_arrays)
 df_angles = pd.DataFrame({"angle": all_angles}, dtype=float)
-plt.figure(figsize=(5, 3), dpi=600)
+plt.figure(figsize=(5, 3), dpi=300)
 sns.histplot(
     data=df_angles,
     x="angle",
@@ -168,9 +177,9 @@ sns.histplot(
     lw=3,
 )
 plt.text(
-    50,
+    60,
     0.055,
-    "# Molecules = " + str(df_angles.shape[0]),
+    "# Molecules = " + str(data.shape[0]),
     weight="bold",
     color="black",
     fontsize=9,
@@ -186,7 +195,7 @@ plt.savefig("angle_histo_constrained.png", format="png", bbox_inches="tight")
 plt.close()
 
 
-data = df_all[df_all["equivalent_d_nm"] > threshold_equivalent_d_nm]
+data = df_all[df_all["max_d_anytwo_nm"] > threshold_max_d_anytwo_nm]
 data = data[data["alpha"] > 1.1]
 data = data.dropna(subset=["list_of_angles"])
 lst_angle_arrays = []
@@ -196,7 +205,7 @@ for array_like_string in data["list_of_angles"].to_list():
     )
 all_angles = np.concatenate(lst_angle_arrays)
 df_angles = pd.DataFrame({"angle": all_angles}, dtype=float)
-plt.figure(figsize=(5, 3), dpi=600)
+plt.figure(figsize=(5, 3), dpi=300)
 sns.histplot(
     data=df_angles,
     x="angle",
@@ -208,9 +217,9 @@ sns.histplot(
     lw=3,
 )
 plt.text(
-    50,
+    60,
     0.055,
-    "# Molecules = " + str(df_angles.shape[0]),
+    "# Molecules = " + str(data.shape[0]),
     weight="bold",
     color="black",
     fontsize=9,
@@ -229,9 +238,9 @@ plt.close()
 ##########################################
 # D distribution among the non contrained molecules
 data = df_all[df_all["linear_fit_R2"] > 0.7]
-data = data[data["equivalent_d_nm"] > threshold_equivalent_d_nm]
-data = data[data["alpha"] > 0.2]
-plt.figure(figsize=(5, 3), dpi=600)
+data = data[data["max_d_anytwo_nm"] > threshold_max_d_anytwo_nm]
+data = data[data["alpha"] > 0.5]
+plt.figure(figsize=(5, 3), dpi=300)
 ax = sns.histplot(
     data=data,
     x="linear_fit_log10D",
@@ -250,7 +259,7 @@ plt.axvspan(
 )
 plt.text(
     -0.4,
-    0.08,
+    0.06,
     "# Fitted Molecules = " + str(data.shape[0]),
     weight="bold",
     fontsize=9,
