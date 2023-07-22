@@ -13,10 +13,14 @@ IMPORTANT
 Remember to change the "DEFAULT PARAMETER GRIDS" section of site-packages/saspt/constants.py!
 """
 
+
+print("Please enter the s per frame for the video")
+s_per_frame = float(input())
+
 saSPT_settings = dict(
     likelihood_type=RBME,
     pixel_size_um=0.117,
-    frame_interval=0.02,
+    frame_interval=s_per_frame,
     focal_depth=0.7,
     progress_bar=True,
 )
@@ -27,8 +31,6 @@ df_single_condition = pd.read_csv(fpath_single_condition)
 data_folder = dirname(fpath_single_condition)
 os.chdir(data_folder)
 
-# Displacement threshold for non static molecules
-threshold_disp = 0.2  # unit: um
 # Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
 
 

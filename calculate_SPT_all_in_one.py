@@ -14,7 +14,8 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 # scalling factors for physical units
 um_per_pixel = 0.117
-s_per_frame = 0.02
+print("Please enter the s per frame for the video")
+s_per_frame = float(input())
 print(
     "Scaling factors: s_per_frame = "
     + str(s_per_frame)
