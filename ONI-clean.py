@@ -11,7 +11,9 @@ from rich import print as rprint
 # python -m pip install rich
 
 rprint("[red]Choose an experiment folder[red]")
-folderpath = fd.askdirectory()
+folderpath = fd.askdirectory(
+    initialdir="/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/RAW_DATA/DEFAULT_USER"
+)
 
 
 print("Now organizing:\n", folderpath)
