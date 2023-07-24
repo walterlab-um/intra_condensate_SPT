@@ -14,5 +14,5 @@ for f in track(lst_path_data):
     df = pd.read_csv(f)
     df.insert(0, "filename", np.repeat(basename(f), df.shape[0]))
     lst_df.append(df)
-df_all = pd.concat(lst_df)
+df_all = pd.concat(lst_df, ignore_index=True)
 df_all.to_csv("SPT_results_AIO_concat-pleaserename.csv", index=False)
