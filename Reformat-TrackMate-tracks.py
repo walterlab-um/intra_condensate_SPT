@@ -1,12 +1,7 @@
 import pandas as pd
 import numpy as np
-from os.path import dirname, basename, join
 from tkinter import filedialog as fd
 from rich.progress import track
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-sns.set(color_codes=True, style="white")
 
 
 def quick_tracklength_checker(df_formatted):
