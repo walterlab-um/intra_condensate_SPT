@@ -71,18 +71,18 @@ def reformat_for_saSPT(df_AIO):
 
 ## For all molecules
 
-df_saSPT_input = reformat_for_saSPT(df_single_condition)
-# saSPT
-SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
-df_save = SA.occupations_dataframe
-fname_save = "saSPT-pooled-all-" + basename(fpath_single_condition).split("concat-")[-1]
-df_save.to_csv(fname_save, index=False)
+# df_saSPT_input = reformat_for_saSPT(df_single_condition)
+# # saSPT
+# SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
+# df_save = SA.occupations_dataframe
+# fname_save = "saSPT-pooled-all-" + basename(fpath_single_condition).split("concat-")[-1]
+# df_save.to_csv(fname_save, index=False)
 # SA.plot_occupations(fname_save[:-4] + ".png")
 
 
 ## For only mobile molecules
 
-df_mobile = df_single_condition[df_single_condition["equivalent_d_nm"] > 200]
+df_mobile = df_single_condition[df_single_condition["max_d_anytwo_nm"] > 200]
 df_saSPT_input = reformat_for_saSPT(df_mobile)
 # saSPT
 SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
