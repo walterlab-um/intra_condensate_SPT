@@ -73,7 +73,7 @@ for fname_data in lst_fname:
     lst_frac_static.append(F_static)
 
 #############################################
-plt.figure(figsize=(5, 3), dpi=300)
+plt.figure(figsize=(5, 2.5), dpi=300)
 i = 0
 for fname_data in lst_fname[0:4]:
     df_saSPT = pd.read_csv(fname_data, dtype=float)
@@ -85,6 +85,7 @@ for fname_data in lst_fname[0:4]:
         color=color_palette[i],
         label=fname_data.split("TR_")[-1].split("hr")[0] + " hr",
         alpha=0.7,
+        lw=3,
     )
     # find peaks
     log10D = df_toplot["log10D"].to_numpy(dtype=float)
@@ -97,12 +98,14 @@ for fname_data in lst_fname[0:4]:
     i += 1
 
 sns.move_legend(ax, 0, title=None, frameon=False)
-plt.title("Aging, no Dextran", weight="bold")
+plt.title("Aging, no Dextran", weight="bold", fontsize=15)
 plt.xlim(log10D.min(), log10D.max())
 plt.ylim(plt_ylim[0], plt_ylim[1])
-plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold")
-plt.ylabel("SA Occupation", weight="bold")
-plt.tight_layout()
+plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold", fontsize=15)
+plt.ylabel("SA Occupation", weight="bold", fontsize=15)
+plt.gca().spines[:].set_linewidth(3)
+plt.gca().tick_params(axis="both", which="major", labelsize=15)
+# plt.tight_layout()
 plt.savefig(
     "saSPT_pooled-mobile-Aging_noDex.png",
     format="png",
@@ -111,16 +114,19 @@ plt.savefig(
 plt.close()
 
 # bar plot of F_static
-plt.figure(figsize=(3, 5), dpi=300)
+plt.figure(figsize=(3, 3), dpi=300)
 plt.bar(
     x=["0 h", "3 h", "6 h", "8 h"],
     height=lst_frac_static[0:4],
     color=color_palette,
+    width=0.8,
 )
 plt.ylim(0, 1)
-plt.title("Aging, without Dextran", weight="bold")
-plt.ylabel("Static Fraction", weight="bold")
-plt.tight_layout()
+plt.title("Aging, without Dextran", weight="bold", fontsize=15)
+plt.ylabel("Static Fraction", weight="bold", fontsize=15)
+plt.gca().spines[:].set_linewidth(3)
+plt.gca().tick_params(axis="both", which="major", labelsize=15)
+# plt.tight_layout()
 plt.savefig(
     "F_static-saSPT_pooled-mobile-Aging_noDex.png",
     format="png",
@@ -129,7 +135,7 @@ plt.savefig(
 plt.close()
 
 #############################################
-plt.figure(figsize=(5, 3), dpi=300)
+plt.figure(figsize=(5, 2.5), dpi=300)
 i = 0
 for fname_data in lst_fname[5:-1]:
     df_saSPT = pd.read_csv(fname_data, dtype=float)
@@ -141,6 +147,7 @@ for fname_data in lst_fname[5:-1]:
         color=color_palette[i],
         label=fname_data.split("TR_")[-1].split("hr")[0] + " hr",
         alpha=0.7,
+        lw=3,
     )
     # find peaks
     log10D = df_toplot["log10D"].to_numpy(dtype=float)
@@ -152,12 +159,14 @@ for fname_data in lst_fname[5:-1]:
         plt.axvline(x, color=color_palette[i], ls="--", lw=1, alpha=0.3)
     i += 1
 sns.move_legend(ax, 0, title=None, frameon=False)
-plt.title("Aging, 10% Dextran", weight="bold")
+plt.title("Aging, 10% Dextran", weight="bold", fontsize=15)
 plt.xlim(log10D.min(), log10D.max())
 plt.ylim(plt_ylim[0], plt_ylim[1])
-plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold")
-plt.ylabel("SA Occupation", weight="bold")
-plt.tight_layout()
+plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold", fontsize=15)
+plt.ylabel("SA Occupation", weight="bold", fontsize=15)
+plt.gca().spines[:].set_linewidth(3)
+plt.gca().tick_params(axis="both", which="major", labelsize=15)
+# plt.tight_layout()
 plt.savefig(
     "saSPT_pooled-mobile-Aging_10Dex.png",
     format="png",
@@ -166,16 +175,19 @@ plt.savefig(
 plt.close()
 
 # bar plot of F_static
-plt.figure(figsize=(3, 5), dpi=300)
+plt.figure(figsize=(3, 3), dpi=300)
 plt.bar(
     x=["0 h", "3 h", "6 h", "8 h"],
     height=lst_frac_static[5:-1],
     color=color_palette,
+    width=0.8,
 )
 plt.ylim(0, 1)
-plt.title("Aging, 10% Dextran", weight="bold")
-plt.ylabel("Static Fraction", weight="bold")
-plt.tight_layout()
+plt.title("Aging, 10% Dextran", weight="bold", fontsize=15)
+plt.ylabel("Static Fraction", weight="bold", fontsize=15)
+plt.gca().spines[:].set_linewidth(3)
+plt.gca().tick_params(axis="both", which="major", labelsize=15)
+# plt.tight_layout()
 plt.savefig(
     "F_static-saSPT_pooled-mobile-Aging_10Dex.png",
     format="png",
@@ -184,10 +196,10 @@ plt.savefig(
 plt.close()
 
 #############################################
-plt.figure(figsize=(5, 3), dpi=300)
+plt.figure(figsize=(5, 2.5), dpi=300)
 i = 0
 lst_fname_RNA = [lst_fname[0], lst_fname[4]]
-lst_label = ["-RNA", "+RNA"]
+lst_label = ["-Total RNA", "+Total RNA"]
 for fname_data in lst_fname_RNA:
     df_saSPT = pd.read_csv(fname_data, dtype=float)
     df_toplot = extract_log10D_density(df_saSPT)
@@ -198,6 +210,7 @@ for fname_data in lst_fname_RNA:
         color=color_palette_2[i],
         label=lst_label[i],
         alpha=0.7,
+        lw=3,
     )
     # find peaks
     log10D = df_toplot["log10D"].to_numpy(dtype=float)
@@ -209,12 +222,14 @@ for fname_data in lst_fname_RNA:
         plt.axvline(x, color=color_palette_2[i], ls="--", lw=1, alpha=0.3)
     i += 1
 sns.move_legend(ax, 0, title=None, frameon=False)
-plt.title("Effect of RNA, no Dextran", weight="bold")
+plt.title("Effect of RNA, no Dextran", weight="bold", fontsize=15)
 plt.xlim(log10D.min(), log10D.max())
 plt.ylim(plt_ylim[0], plt_ylim[1])
-plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold")
-plt.ylabel("SA Occupation", weight="bold")
-plt.tight_layout()
+plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold", fontsize=15)
+plt.ylabel("SA Occupation", weight="bold", fontsize=15)
+plt.gca().spines[:].set_linewidth(3)
+plt.gca().tick_params(axis="both", which="major", labelsize=15)
+# plt.tight_layout()
 plt.savefig(
     "saSPT_pooled-mobile-Aging_compareRNA_noDex.png",
     format="png",
@@ -223,17 +238,19 @@ plt.savefig(
 plt.close()
 
 # bar plot of F_static
-plt.figure(figsize=(2, 5), dpi=300)
+plt.figure(figsize=(3, 3), dpi=300)
 plt.bar(
     x=lst_label,
     height=[lst_frac_static[0], lst_frac_static[4]],
     color=color_palette_2,
-    width=0.8,
+    width=0.4,
 )
 plt.ylim(0, 1)
-plt.title("Effect of RNA,\nno Dextran", weight="bold")
-plt.ylabel("Static Fraction", weight="bold")
-plt.tight_layout()
+plt.title("Effect of RNA,\nno Dextran", weight="bold", fontsize=15)
+plt.ylabel("Static Fraction", weight="bold", fontsize=15)
+plt.gca().spines[:].set_linewidth(3)
+plt.gca().tick_params(axis="both", which="major", labelsize=15)
+# plt.tight_layout()
 plt.savefig(
     "F_static-saSPT_pooled-mobile-Aging_compareRNA_noDex.png",
     format="png",
@@ -242,10 +259,10 @@ plt.savefig(
 plt.close()
 
 #############################################
-plt.figure(figsize=(5, 3), dpi=300)
+plt.figure(figsize=(5, 2.5), dpi=300)
 i = 0
 lst_fname_RNA = [lst_fname[5], lst_fname[-1]]
-lst_label = ["-RNA", "+RNA"]
+lst_label = ["-Total RNA", "+Total RNA"]
 for fname_data in lst_fname_RNA:
     df_saSPT = pd.read_csv(fname_data, dtype=float)
     df_toplot = extract_log10D_density(df_saSPT)
@@ -256,6 +273,7 @@ for fname_data in lst_fname_RNA:
         color=color_palette_2[i],
         label=lst_label[i],
         alpha=0.7,
+        lw=3,
     )
     # find peaks
     log10D = df_toplot["log10D"].to_numpy(dtype=float)
@@ -267,12 +285,14 @@ for fname_data in lst_fname_RNA:
         plt.axvline(x, color=color_palette_2[i], ls="--", lw=1, alpha=0.3)
     i += 1
 sns.move_legend(ax, 0, title=None, frameon=False)
-plt.title("Effect of RNA, 10% Dextran", weight="bold")
+plt.title("Effect of RNA, 10% Dextran", weight="bold", fontsize=15)
 plt.xlim(log10D.min(), log10D.max())
 plt.ylim(plt_ylim[0], plt_ylim[1])
-plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold")
-plt.ylabel("SA Occupation", weight="bold")
-plt.tight_layout()
+plt.xlabel(r"Apparent log$_{10}$D, $\mu$m$^2$/s", weight="bold", fontsize=15)
+plt.ylabel("SA Occupation", weight="bold", fontsize=15)
+plt.gca().spines[:].set_linewidth(3)
+plt.gca().tick_params(axis="both", which="major", labelsize=15)
+# plt.tight_layout()
 plt.savefig(
     "saSPT_pooled-mobile-Aging_compareRNA_10Dex.png",
     format="png",
@@ -281,17 +301,19 @@ plt.savefig(
 plt.close()
 
 # bar plot of F_static
-plt.figure(figsize=(2, 5), dpi=300)
+plt.figure(figsize=(3, 3), dpi=300)
 plt.bar(
     x=lst_label,
     height=[lst_frac_static[5], lst_frac_static[-1]],
     color=color_palette_2,
-    width=0.8,
+    width=0.4,
 )
 plt.ylim(0, 1)
-plt.title("Effect of RNA,\n10% Dextran", weight="bold")
-plt.ylabel("Static Fraction", weight="bold")
-plt.tight_layout()
+plt.title("Effect of RNA,\n10% Dextran", weight="bold", fontsize=15)
+plt.ylabel("Static Fraction", weight="bold", fontsize=15)
+plt.gca().spines[:].set_linewidth(3)
+plt.gca().tick_params(axis="both", which="major", labelsize=15)
+# plt.tight_layout()
 plt.savefig(
     "F_static-saSPT_pooled-mobile-Aging_compareRNA_10Dex.png",
     format="png",
