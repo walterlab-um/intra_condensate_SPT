@@ -10,7 +10,7 @@ sns.set(color_codes=True, style="white")
 pd.options.mode.chained_assignment = None  # default='warn'
 
 os.chdir(
-    "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_aging crowding Hela"
+    "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_D to organization_exclude hypothesis/crowding_aging_Hela"
 )
 data = pd.read_csv("N_and_Fraction_per_replicate_byAngle.csv")
 
