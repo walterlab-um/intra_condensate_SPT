@@ -1,7 +1,4 @@
-import cv2
 from tifffile import imread, imwrite
-import pickle
-import numpy as np
 from tkinter import filedialog as fd
 from rich.progress import track
 
