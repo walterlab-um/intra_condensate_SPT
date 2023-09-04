@@ -23,21 +23,24 @@ for fpath in track(lst_files):
     # load the tiff file
     video = imread(fpath)
     halfwidth = int(video.shape[2] / 2)
-    frames = int(video.shape[0])
 
     # split left and right
     video_left = video[:, :, 0:halfwidth]
     video_right = video[:, :, halfwidth:]
 
-    if selector == "1":
-        video_out = video_left
-    elif selector == "2":
-        video_out = video_right
+    fsave = fpath[:-4] + "-cropped.tif"
 
-    fsave_right = fpath[-4] + "-cropped.tif"
-    imwrite(
-        fsave_right,
-        video_out,
-        imagej=True,
-        metadata={"axes": "TYX"},
-    )
+    if selector == "1":
+        imwrite(
+            fsave,
+            video_left,
+            imagej=True,
+            metadata={"axes": "TYX"},
+        )
+    elif selector == "2":
+        imwrite(
+            fsave,
+            video_right,
+            imagej=True,
+            metadata={"axes": "TYX"},
+        )
