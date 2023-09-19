@@ -6,16 +6,23 @@ from tkinter import filedialog as fd
 from rich.progress import track
 
 
-print("Choose the matrix")
+print("Pick the channel to perform transformation, 1 for left, 2 for right:")
+selector = input()
+if selector == "1":
+    print("Choose the matrix for left")
+elif selector == "2":
+    print("Choose the matrix for left")
+else:
+    print("Please enter either 1 or 2")
+    exit()
 path_matrix = fd.askopenfilename()
-
 warp_matrix = pickle.load(open(path_matrix, "rb"))
 
 print("Choose the tif files for channel alignment:")
 lst_files = list(fd.askopenfilenames())
 
 print("Type in 1 for odd left even right; 2 for odd right even left")
-selector = int(input())
+selector_order = int(input())
 
 
 def crop_imgstack(imgstack):
@@ -53,10 +60,25 @@ for fname in track(lst_files):
     img_left = img[:, :, 0:halfwidth]
     img_right = img[:, :, halfwidth:]
 
-    img_left_cropped = crop_imgstack(img_left)
-    if selector == 1:  # odd left even right
+    if selector == "1":
+        # Use warpPerspective for Homography transform ON EACH Z FRAME
+        lst_img_left_aligned = [
+            transform(img_left[z, :, :], warp_matrix) for z in range(img.shape[0])
+        ]
+        img_left_aligned = np.stack(lst_img_left_aligned, axis=0)
+        img_right_aligned = img_right
+    elif selector == "2":
+        # Use warpPerspective for Homography transform ON EACH Z FRAME
+        lst_img_right_aligned = [
+            transform(img_right[z, :, :], warp_matrix) for z in range(img.shape[0])
+        ]
+        img_right_aligned = np.stack(lst_img_right_aligned, axis=0)
+        img_left_aligned = img_left
+
+    img_left_cropped = crop_imgstack(img_left_aligned)
+    if selector_order == 1:  # odd left even right
         img_left_final = np.delete(img_left_cropped, frames_even, 0)
-    elif selector == 2:  # odd right even left
+    elif selector_order == 2:  # odd right even left
         img_left_final = np.delete(img_left_cropped, frames_odd, 0)
 
     fsave_left = fname.strip(".tif") + "-left.tif"
@@ -67,17 +89,11 @@ for fname in track(lst_files):
         metadata={"axes": "TYX"},
     )
 
-    # Use warpPerspective for Homography transform ON EACH Z FRAME
-    lst_img_right_aligned = [
-        transform(img_right[z, :, :], warp_matrix) for z in range(img.shape[0])
-    ]
-    img_right_aligned = np.stack(lst_img_right_aligned, axis=0)
-
     # crop, discard the even for the right
     img_right_cropped = crop_imgstack(img_right_aligned)
-    if selector == 1:  # odd left even right
+    if selector_order == 1:  # odd left even right
         img_right_final = np.delete(img_right_cropped, frames_odd, 0)
-    elif selector == 2:  # odd right even left
+    elif selector_order == 2:  # odd right even left
         img_right_final = np.delete(img_right_cropped, frames_even, 0)
     fsave_right = fname.strip(".tif") + "-right.tif"
     imwrite(
