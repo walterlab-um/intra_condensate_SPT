@@ -11,7 +11,7 @@ selector = input()
 if selector == "1":
     print("Choose the matrix for left")
 elif selector == "2":
-    print("Choose the matrix for left")
+    print("Choose the matrix for right")
 else:
     print("Please enter either 1 or 2")
     exit()
