@@ -10,7 +10,15 @@ from rich.progress import track
 #########################################
 # Load and organize files
 # ONI
-print("Choose the matrix")
+print("Pick the channel to perform transformation, 1 for left, 2 for right:")
+selector = input()
+if selector == "1":
+    print("Choose the matrix for left")
+elif selector == "2":
+    print("Choose the matrix for left")
+else:
+    print("Please enter either 1 or 2")
+    exit()
 path_matrix = fd.askopenfilename()
 warp_matrix = pickle.load(open(path_matrix, "rb"))
 
@@ -49,20 +57,27 @@ for fpath in track(lst_files):
     img_left = img[:, :, 0:halfwidth]
     img_right = img[:, :, halfwidth:]
 
+    if selector == "1":
+        # Use warpPerspective for Homography transform ON EACH Z FRAME
+        lst_img_left_aligned = [
+            transform(img_left[z, :, :], warp_matrix) for z in range(img.shape[0])
+        ]
+        img_left_aligned = np.stack(lst_img_left_aligned, axis=0)
+        img_right_aligned = img_right
+    elif selector == "2":
+        # Use warpPerspective for Homography transform ON EACH Z FRAME
+        lst_img_right_aligned = [
+            transform(img_right[z, :, :], warp_matrix) for z in range(img.shape[0])
+        ]
+        img_right_aligned = np.stack(lst_img_right_aligned, axis=0)
+        img_left_aligned = img_left
+
     # again need odd for right, even for left
     # the left: crop, take last 10 frames, average projection, DO NOT duplicate
-    img_left_cropped = crop_imgstack(img_left)
+    img_left_cropped = crop_imgstack(img_left_aligned)
     img_left_aveproj = np.nanmean(img_left_cropped[-10:, :, :], axis=0)
-    # img_left_final = np.tile(img_left_maxproj, (frames - 10, 1, 1))
-
     fsave_left = fpath.strip(".tif") + "-condensates_AveProj.tif"
     imwrite(fsave_left, img_left_aveproj.astype("int16"), imagej=True)
-
-    # Use warpPerspective for Homography transform ON EACH Z FRAME
-    lst_img_right_aligned = [
-        transform(img_right[z, :, :], warp_matrix) for z in range(img.shape[0])
-    ]
-    img_right_aligned = np.stack(lst_img_right_aligned, axis=0)
 
     # crop, discard last 10 frames
     img_right_cropped = crop_imgstack(img_right_aligned)
