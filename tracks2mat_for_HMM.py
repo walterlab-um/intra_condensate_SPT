@@ -3,8 +3,8 @@ import pandas as pd
 import numpy as np
 from tkinter import filedialog as fd
 
-
-fs = 0.02
+# 20 ms per frame = 1/0.02 = 50 frames per second
+fs = 50.0
 umperpx = 0.117
 locerror = 0.025
 dict_cfg = {
