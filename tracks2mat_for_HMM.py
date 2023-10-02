@@ -34,7 +34,7 @@ for trackID in lst_trackID:
 
     track = np.vstack([x, y])
 
-    fpath_out = path[:-4] + ".mat"
+    fpath_out = path[:-4] + "-" + str(trackID) + ".mat"
 
     mdict = {
         "cfg": dict_cfg,
