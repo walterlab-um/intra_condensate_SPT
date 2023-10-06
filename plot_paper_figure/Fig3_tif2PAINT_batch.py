@@ -10,12 +10,9 @@ from rich.progress import track
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
-folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_miR21_PAINT_final"
+folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT_final"
 os.chdir(folder_save)
 lst_files = [f for f in os.listdir(".") if f.endswith(".tif")]
-
-line_color = "white"  # #00274C
-scalebar_color = "white"
 
 colors = [(0, 0, 1, c) for c in np.linspace(0, 1, 100)]
 cmap_name = "transparant2blue"
@@ -33,6 +30,20 @@ cmap_red = clr.LinearSegmentedColormap.from_list(
     N=100,
 )
 
+
+def plot_scalebar():
+    scale_bar_offset = 2
+    scalebar_length_um = 1
+    scalebar_length_pxl = scalebar_length_um / 0.117
+    plt.plot(
+        [scale_bar_offset, scale_bar_offset + scalebar_length_pxl],
+        [scale_bar_offset, scale_bar_offset],
+        "-",
+        color="black",
+        lw=5,
+    )
+
+
 for fname in track(lst_files):
     img = imread(fname)
     img_red = img[0, :, :]
@@ -49,6 +60,8 @@ for fname in track(lst_files):
         vmin=vmin,
         vmax=vmax,
     )
+    plot_scalebar()
+    plt.gca().invert_yaxis()
     plt.axis("off")
     plt.savefig(
         fname[:-4] + "-blue.png",
@@ -69,6 +82,8 @@ for fname in track(lst_files):
         vmin=vmin,
         vmax=vmax,
     )
+    # plot_scalebar()
+    plt.gca().invert_yaxis()
     plt.axis("off")
     plt.savefig(
         fname[:-4] + "-red.png",
@@ -101,6 +116,8 @@ for fname in track(lst_files):
         vmax=vmax,
         alpha=0.7,
     )
+    # plot_scalebar()
+    plt.gca().invert_yaxis()
     plt.axis("off")
     plt.savefig(
         fname[:-4] + "-overlay.png",
