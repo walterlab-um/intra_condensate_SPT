@@ -2,6 +2,7 @@ from tifffile import imread
 import os
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
+from scipy.stats import pearsonr
 import numpy as np
 import pandas as pd
 from rich.progress import track
@@ -9,7 +10,7 @@ from rich.progress import track
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
-folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_miR21_PAINT_final/not_chosen_ones"
+folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_miR21_PAINT_final"
 os.chdir(folder_save)
 lst_files = [f for f in os.listdir(".") if f.endswith(".tif")]
 
@@ -108,3 +109,36 @@ for fname in track(lst_files):
         bbox_inches="tight",
     )
     plt.close()
+
+    # Correlation
+    plt.figure(figsize=(3, 3))
+    plt.scatter(
+        img_red.flat,
+        img_blue.flat,
+        color="gray",
+    )
+    # plt.axis("equal")
+    plt.xlim(0, img_red.max())
+    plt.ylim(0, img_blue.max())
+    plt.xlabel(
+        "RNA, # per pxl",
+        # weight="bold",
+        fontsize=20,
+    )
+    plt.ylabel(
+        "FUS, # per pxl",
+        # weight="bold",
+        fontsize=20,
+    )
+    rho, pval = pearsonr(img_red.flat, img_blue.flat)
+    plt.title(
+        r"$\rho$ = " + str(round(rho, 2)),
+        weight="bold",
+        fontsize=30,
+    )
+    plt.savefig(
+        fname[:-4] + "-pearson.png",
+        dpi=300,
+        format="png",
+        bbox_inches="tight",
+    )
