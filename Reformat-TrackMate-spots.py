@@ -13,6 +13,7 @@ for fpath in track(lst_files):
         usecols=[
             "ID",
             "QUALITY",
+            "TRACK_ID",
             "POSITION_X",
             "POSITION_Y",
             "POSITION_T",
@@ -30,6 +31,7 @@ for fpath in track(lst_files):
     )
     mapper = {
         "ID": "spotID",
+        "TRACK_ID": "trackID",
         "POSITION_X": "x",
         "POSITION_Y": "y",
         "POSITION_T": "t",
