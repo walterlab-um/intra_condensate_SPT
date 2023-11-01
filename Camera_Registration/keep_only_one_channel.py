@@ -25,22 +25,22 @@ for fpath in track(lst_files):
     halfwidth = int(video.shape[2] / 2)
 
     # split left and right
-    video_left = video[:, :, 0:halfwidth]
-    video_right = video[:, :, halfwidth:]
+    # video_left = video[:, :, 0:halfwidth]
+    # video_right = video[:, :, halfwidth:]
 
     fsave = fpath[:-4] + "-cropped.tif"
 
     if selector == "1":
         imwrite(
             fsave,
-            video_left,
+            video[:, :, 0:halfwidth],
             imagej=True,
             metadata={"axes": "TYX"},
         )
     elif selector == "2":
         imwrite(
             fsave,
-            video_right,
+            video[:, :, halfwidth:],
             imagej=True,
             metadata={"axes": "TYX"},
         )
