@@ -1,5 +1,6 @@
 from tifffile import imwrite
 from skimage.util import img_as_uint
+from tkinter import filedialog as fd
 import os
 from os.path import dirname, basename
 from scipy.ndimage import gaussian_filter
@@ -10,9 +11,12 @@ import pickle
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/FL_SPT_in_condensates/FL-FUS488-ALEX-PAINT/20230928-GOX-473nm-50per-640nm-20per-20msALEX/reconstructed_seperate_channel"
+print("Choose all spots_reformatted csv files for processing:")
+lst_path = list(fd.askopenfilenames())
+
+folder_save = dirname(lst_path[0])
 os.chdir(folder_save)
-lst_files = [f for f in os.listdir(".") if f.endswith("spots_reformatted.csv")]
+lst_files = [basename(f) for f in lst_path]
 
 tracklength_threshold = 10
 
