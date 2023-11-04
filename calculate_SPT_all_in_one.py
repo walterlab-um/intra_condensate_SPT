@@ -128,6 +128,10 @@ for fpath in track(lst_fpath):
         df_current_track = df_current_file[df_current_file.trackID == trackID]
         tracklength = df_current_track.shape[0]
 
+        # filter out short tracks, so spots_reformatted.csv can be used as tracks
+        if tracklength < 5:
+            continue
+
         x = df_current_track["x"].to_numpy(dtype=float)
         y = df_current_track["y"].to_numpy(dtype=float)
         disp_nm = (
