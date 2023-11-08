@@ -53,7 +53,6 @@ for fname in track(lst_files_tau):
     )
     cbar.set_label(
         label="Life Time, ns",
-        weight="bold",
         fontsize=21,
         labelpad=-10,
         family="Arial",

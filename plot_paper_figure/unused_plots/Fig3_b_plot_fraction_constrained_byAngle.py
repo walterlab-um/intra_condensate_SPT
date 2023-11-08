@@ -55,9 +55,9 @@ ax = sns.stripplot(
     color="0.7",
     size=3,
 )
-plt.title("Aging, without Dextran", weight="bold")
+plt.title("Aging, without Dextran")
 plt.ylim(0, 1)
-plt.ylabel("Constrained Fraction, by Angle", weight="bold")
+plt.ylabel("Constrained Fraction, by Angle")
 ax.set_xticklabels(["0 h", "3 h", "6 h", "8 h"])
 ax.xaxis.set_tick_params(labelsize=15, labelrotation=0)
 plt.xlabel("")
@@ -86,9 +86,9 @@ ax = sns.stripplot(
     color="0.7",
     size=3,
 )
-plt.title("Aging, 10% Dextran", weight="bold")
+plt.title("Aging, 10% Dextran")
 plt.ylim(0, 1)
-plt.ylabel("Constrained Fraction, by Angle", weight="bold")
+plt.ylabel("Constrained Fraction, by Angle")
 ax.set_xticklabels(["0 h", "3 h", "6 h", "8 h"])
 ax.xaxis.set_tick_params(labelsize=15, labelrotation=0)
 plt.xlabel("")
@@ -135,9 +135,9 @@ ax = sns.stripplot(
     color="0.7",
     size=3,
 )
-plt.title("Effect of RNA", weight="bold")
+plt.title("Effect of RNA")
 plt.ylim(0, 1)
-plt.ylabel("Constrained Fraction, by Angle", weight="bold")
+plt.ylabel("Constrained Fraction, by Angle")
 ax.set_xticklabels(["-Dex,-RNA", "-Dex,+RNA", "+Dex,-RNA", "+Dex,+RNA"])
 ax.xaxis.set_tick_params(labelsize=15, labelrotation=90)
 plt.xlabel("")

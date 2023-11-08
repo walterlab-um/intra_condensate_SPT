@@ -139,18 +139,15 @@ for fname in track(lst_files):
     plt.ylim(0, img_blue.max())
     plt.xlabel(
         "RNA, # per pxl",
-        # weight="bold",
         fontsize=20,
     )
     plt.ylabel(
         "FUS, # per pxl",
-        # weight="bold",
         fontsize=20,
     )
     rho, pval = pearsonr(img_red.flat, img_blue.flat)
     plt.title(
         r"$\rho$ = " + str(round(rho, 2)),
-        weight="bold",
         fontsize=30,
     )
     plt.savefig(
