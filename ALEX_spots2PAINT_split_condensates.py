@@ -11,12 +11,19 @@ import pickle
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-print("Choose all spots_reformatted csv files for processing:")
+print(
+    "Choose BOTH left-spots_reformatted AND right-spots_reformatted csv files from ALEX SPT-PAINT experiment:"
+)
 lst_path = list(fd.askopenfilenames())
 
 folder_save = dirname(lst_path[0])
 os.chdir(folder_save)
-lst_files = [basename(f) for f in lst_path]
+lst_fname_left = [
+    basename(f) for f in lst_path if f.endswith("left-spots_reformatted.csv")
+]
+lst_fname_right = [
+    f.split("left")[0] + "right" + f.split("left")[-1] for f in lst_fname_left
+]
 
 tracklength_threshold = 10
 
@@ -28,12 +35,8 @@ ypixels_ONI = 674
 xedges = np.arange((xpixels_ONI + 1) * scaling_factor)
 yedges = np.arange((ypixels_ONI + 1) * scaling_factor)
 
-for fpath in lst_files:
-    fname = basename(fpath)
-    df = pd.read_csv(fname)
 
-    ## Reconstruct PAINT image
-
+def spots2PAINT(df):
     # single-frame spots
     df_single_frame_spots = df[df["trackID"].isna()]
     img_spots, _, _ = np.histogram2d(
@@ -48,7 +51,7 @@ for fpath in lst_files:
     all_trackID = df_tracks["trackID"].unique()
     lst_of_arr_x = []
     lst_of_arr_y = []
-    for trackID in track(all_trackID, description=fname + ":PAINT"):
+    for trackID in track(all_trackID, description="Reconstruction: PAINT"):
         df_current = df_tracks[df_tracks["trackID"] == trackID]
         lst_tracklength.append(df_current.shape[0])
         # for short tracks, treat as spots
@@ -74,21 +77,25 @@ for fpath in lst_files:
     )
 
     img_PAINT = img_spots + img_tracks
+
+    return img_PAINT
+
+
+for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
+    df = pd.read_csv(fname_left)
+
+    ## Reconstruct PAINT image
+    img_PAINT = spots2PAINT(df)
+    print("Left channel PAINT reconstruction done.")
     img_PAINT_final = img_as_uint(img_PAINT / img_PAINT.max())
 
     fname_save = (
-        fname.split("-spot")[0]
+        fname_left.split("-spot")[0]
         + "-threshold-"
         + str(tracklength_threshold)
-        + "-PAINT.tif"
+        + "-PAINT_phys_unit.tif"
     )
-    imwrite(
-        fname_save,
-        img_PAINT_final,
-        imagej=True,
-        metadata={"um_per_pixel_PAINT": um_per_pixel_PAINT},
-    )
-    pickle.dump(img_PAINT, open(fname_save[:-4] + "_phys_unit.p", "wb"))
+    imwrite(fname_save, img_PAINT)
 
     ## Reconstruct step size iamge, unit: um
     lst_mid_x = []
