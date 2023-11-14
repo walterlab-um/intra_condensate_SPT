@@ -1,5 +1,4 @@
 from tifffile import imwrite
-from skimage.util import img_as_uint
 from tkinter import filedialog as fd
 import os
 from os.path import dirname, basename
@@ -12,7 +11,6 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 from rich.progress import track
-import pickle
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
@@ -220,16 +218,6 @@ def smooth_stepsize_img(img_stepsize, sigma):
     return img_stepsize_smoothed
 
 
-def cnt2mask(imgshape, cnt):
-    # create empty image
-    mask = np.zeros(imgshape, dtype=np.uint8)
-    # draw contour
-    cv2.fillPoly(mask, [cnt], (255))
-    mask = mask != 0
-
-    return mask
-
-
 def plot_correlation(x, y, xlabel, ylabel, fname_save):
     plt.figure(figsize=(3, 3))
     plt.scatter(x, y, color="gray")
@@ -239,6 +227,15 @@ def plot_correlation(x, y, xlabel, ylabel, fname_save):
     plt.title(r"$\rho$ = " + str(round(rho, 2)), fontsize=11)
     plt.savefig(fname_save, dpi=300, format="png", bbox_inches="tight")
     plt.close()
+
+
+def cnt2mask(imgshape, contours):
+    # create empty image
+    mask = np.zeros(imgshape, dtype=np.uint8)
+    # draw contour
+    for cnt in contours:
+        cv2.fillPoly(mask, [cnt], (255))
+    return mask
 
 
 for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
@@ -256,9 +253,16 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
     edges = img_denoise > 10
     # find contours coordinates in binary edge image. contours here is a list of np.arrays containing all coordinates of each individual edge/contour.
     contours, _ = cv2.findContours(edges * 1, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+
+    # Merge overlapping contours
+    mask = cnt2mask(img_denoise.shape, contours)
+    contours_final, _ = cv2.findContours(mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+
     # filter out small condensates
     contours_filtered = [
-        cnt for cnt in contours if cv2.contourArea(cnt) > condensate_area_threshold
+        cnt
+        for cnt in contours_final
+        if cv2.contourArea(cnt) > condensate_area_threshold
     ]
 
     condensateID = 0
