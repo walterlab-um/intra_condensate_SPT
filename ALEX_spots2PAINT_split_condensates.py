@@ -4,10 +4,11 @@ from tkinter import filedialog as fd
 import os
 from os.path import dirname, basename
 from scipy.ndimage import gaussian_filter
+from scipy.stats import pearsonr
 import cv2
 import math
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 from rich.progress import track
@@ -32,6 +33,7 @@ lst_fname_right = [
 tracklength_threshold = 10
 condensate_area_threshold = 200  # pixels
 box_padding = 3  # pixels padding arround each condensate contour
+sum_loc_threshold = 30  # PAINT threshold for summed PAINT signal from both channels
 
 um_per_pixel = 0.117
 scaling_factor = 1
@@ -40,40 +42,6 @@ xpixels_ONI = 418
 ypixels_ONI = 674
 xedges = np.arange((xpixels_ONI + 1) * scaling_factor)
 yedges = np.arange((ypixels_ONI + 1) * scaling_factor)
-
-
-def cnt2mask(imgshape, contours):
-    # create empty image
-    mask = np.zeros(imgshape, dtype=np.uint8)
-    # draw contour
-    for cnt in contours:
-        cv2.fillPoly(mask, [cnt], (255))
-    return mask
-
-
-def plt_cnt_tracks_individual(
-    img, cnt, df_track, vmin, vmax, box_x_range, box_y_range, cmap, fpath
-):
-    plt.figure()
-    plt.imshow(img, cmap=cmap, vmin=vmin, vmax=vmax)
-    x = cnt[:, 0][:, 0]
-    x = x - box_y_range[0]
-    y = cnt[:, 0][:, 1]
-    y = y - box_x_range[0]
-    plt.plot(x, y, "-", color="black", linewidth=2)
-    xlast = [x[-1], x[0]]
-    ylast = [y[-1], y[0]]
-    plt.plot(xlast, ylast, "-", color="black", linewidth=2)
-    all_trackID = df_track["trackID"].unique()
-    for trackID in all_trackID:
-        plt.plot(
-            df_track[df_track["trackID"] == trackID].y,
-            df_track[df_track["trackID"] == trackID].x,
-            ".-k",
-            alpha=0.05,
-        )
-    plt.savefig(fpath, dpi=300, format="png", bbox_inches="tight")
-    plt.close()
 
 
 def spots2PAINT(df):
@@ -163,6 +131,31 @@ def cnt2box(cnt):
     return box_x_range_final, box_y_range_final
 
 
+def plt_cnt_tracks_individual(
+    img, cnt, df_track, vmin, vmax, box_x_range, box_y_range, cmap, fpath
+):
+    plt.figure()
+    plt.imshow(img, cmap=cmap, vmin=vmin, vmax=vmax)
+    x = cnt[:, 0][:, 0]
+    x = x - box_y_range[0]
+    y = cnt[:, 0][:, 1]
+    y = y - box_x_range[0]
+    plt.plot(x, y, "-", color="black", linewidth=2)
+    xlast = [x[-1], x[0]]
+    ylast = [y[-1], y[0]]
+    plt.plot(xlast, ylast, "-", color="black", linewidth=2)
+    all_trackID = df_track["trackID"].unique()
+    for trackID in all_trackID:
+        plt.plot(
+            df_track[df_track["trackID"] == trackID].y,
+            df_track[df_track["trackID"] == trackID].x,
+            ".-k",
+            alpha=0.05,
+        )
+    plt.savefig(fpath, dpi=300, format="png", bbox_inches="tight")
+    plt.close()
+
+
 def center_track_coordinates(df_in, box_x_range, box_y_range):
     selector = (
         (df_in.x > box_x_range[0])
@@ -227,7 +220,29 @@ def smooth_stepsize_img(img_stepsize, sigma):
     return img_stepsize_smoothed
 
 
+def cnt2mask(imgshape, cnt):
+    # create empty image
+    mask = np.zeros(imgshape, dtype=np.uint8)
+    # draw contour
+    cv2.fillPoly(mask, [cnt], (255))
+    mask = mask != 0
+
+    return mask
+
+
+def plot_correlation(x, y, xlabel, ylabel, fname_save):
+    plt.figure(figsize=(3, 3))
+    plt.scatter(x, y, color="gray")
+    plt.xlabel(xlabel, fontsize=11)
+    plt.ylabel(ylabel, fontsize=11)
+    rho, _ = pearsonr(x, y)
+    plt.title(r"$\rho$ = " + str(round(rho, 2)), fontsize=11)
+    plt.savefig(fname_save, dpi=300, format="png", bbox_inches="tight")
+    plt.close()
+
+
 for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
+    print("Now processing:", fname_left.split("-left")[0])
     ## Reconstruct PAINT image
     df_left = pd.read_csv(fname_left)
     img_PAINT_left = spots2PAINT(df_left)
@@ -238,7 +253,7 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
 
     ## Split to individual condensates
     img_denoise = gaussian_filter(img_PAINT_left + img_PAINT_right, sigma=1)
-    edges = img_denoise > 5
+    edges = img_denoise > 10
     # find contours coordinates in binary edge image. contours here is a list of np.arrays containing all coordinates of each individual edge/contour.
     contours, _ = cv2.findContours(edges * 1, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
     # filter out small condensates
@@ -247,11 +262,16 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
     ]
 
     condensateID = 0
-    for cnt in contours_filtered:
+    for cnt in track(
+        contours_filtered, description="Reconstructing individual condensates"
+    ):
         ## determine a square box for individual condensate
         box_x_range, box_y_range = cnt2box(cnt)
 
-        ## center tracks coordinates to the center of the box
+        ## center both cnt and tracks coordinates to the center of the box
+        cnt_centered = deepcopy(cnt)
+        cnt_centered[:, 0][:, 0] = cnt_centered[:, 0][:, 0] - box_y_range[0]
+        cnt_centered[:, 0][:, 1] = cnt_centered[:, 0][:, 1] - box_x_range[0]
         df_left_inbox = center_track_coordinates(df_left, box_x_range, box_y_range)
         df_right_inbox = center_track_coordinates(df_right, box_x_range, box_y_range)
 
@@ -264,12 +284,9 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
         ]
 
         ## Calculate step size image
-        img_stepsize_left = single_condensate_stepsize_img(
-            df_left_inbox, (np.ptp(box_x_range), np.ptp(box_y_range))
-        )
-        img_stepsize_right = single_condensate_stepsize_img(
-            df_right_inbox, (np.ptp(box_x_range), np.ptp(box_y_range))
-        )
+        box_shape = (np.ptp(box_x_range), np.ptp(box_y_range))
+        img_stepsize_left = single_condensate_stepsize_img(df_left_inbox, box_shape)
+        img_stepsize_right = single_condensate_stepsize_img(df_right_inbox, box_shape)
         img_stepsize_left_smoothed = smooth_stepsize_img(img_stepsize_left, 1)
         img_stepsize_right_smoothed = smooth_stepsize_img(img_stepsize_right, 1)
 
@@ -284,7 +301,10 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
         )
         df_left_inbox.to_csv(fname_save_prefix + "left.csv", index=False)
         df_right_inbox.to_csv(fname_save_prefix + "right.csv", index=False)
+        imwrite(fname_save_prefix + "left-PAINT.tif", img_PAINT_left_inbox)
+        imwrite(fname_save_prefix + "right-PAINT.tif", img_PAINT_right_inbox)
         imwrite(fname_save_prefix + "left-stepsize.tif", img_stepsize_left_smoothed)
+        imwrite(fname_save_prefix + "right-stepsize.tif", img_stepsize_right_smoothed)
         plt_cnt_tracks_individual(
             img_PAINT_left_inbox,
             cnt,
@@ -306,6 +326,51 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
             box_y_range,
             "Reds",
             fname_save_prefix + "right-PAINT_cnt_tracks.png",
+        )
+
+        ## Plot correlations
+        mask = img_PAINT_left_inbox + img_PAINT_right_inbox > sum_loc_threshold
+        plot_correlation(
+            img_PAINT_left_inbox[mask],
+            img_PAINT_right_inbox[mask],
+            "FUS PAINT, #/pixel",
+            "RNA PAINT, #/pixel",
+            fname_save_prefix + "FlocRloc.png",
+        )
+        plot_correlation(
+            img_stepsize_left_smoothed[mask],
+            img_stepsize_right_smoothed[mask],
+            r"FUS Step Size, $\mu$m",
+            r"RNA Step Size, $\mu$m",
+            fname_save_prefix + "FstepRstep.png",
+        )
+        plot_correlation(
+            img_PAINT_left_inbox[mask],
+            img_stepsize_right_smoothed[mask],
+            "FUS PAINT, #/pixel",
+            r"RNA Step Size, $\mu$m",
+            fname_save_prefix + "FlocRstep.png",
+        )
+        plot_correlation(
+            img_stepsize_left_smoothed[mask],
+            img_PAINT_right_inbox[mask],
+            r"FUS Step Size, $\mu$m",
+            "RNA PAINT, #/pixel",
+            fname_save_prefix + "FstepRloc.png",
+        )
+        plot_correlation(
+            img_PAINT_left_inbox[mask],
+            img_stepsize_left_smoothed[mask],
+            "FUS PAINT, #/pixel",
+            r"FUS Step Size, $\mu$m",
+            fname_save_prefix + "FlocFstep.png",
+        )
+        plot_correlation(
+            img_PAINT_right_inbox[mask],
+            img_stepsize_right_smoothed[mask],
+            "RNA PAINT, #/pixel",
+            r"RNA Step Size, $\mu$m",
+            fname_save_prefix + "RlocRstep.png",
         )
 
 
