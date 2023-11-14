@@ -6,12 +6,14 @@ from scipy.ndimage import gaussian_filter
 from scipy.stats import pearsonr
 import cv2
 import math
+import matplotlib
 import matplotlib.pyplot as plt
 from copy import deepcopy
 import numpy as np
 import pandas as pd
 from rich.progress import track
 
+matplotlib.use("Agg")
 pd.options.mode.chained_assignment = None  # default='warn'
 
 print(
