@@ -4,6 +4,10 @@ from tkinter import filedialog as fd
 import os
 from os.path import dirname, basename
 from scipy.ndimage import gaussian_filter
+import cv2
+import math
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import numpy as np
 import pandas as pd
 from rich.progress import track
@@ -26,6 +30,8 @@ lst_fname_right = [
 ]
 
 tracklength_threshold = 10
+condensate_area_threshold = 200  # pixels
+box_padding = 3  # pixels padding arround each condensate contour
 
 um_per_pixel = 0.117
 scaling_factor = 1
@@ -34,6 +40,56 @@ xpixels_ONI = 418
 ypixels_ONI = 674
 xedges = np.arange((xpixels_ONI + 1) * scaling_factor)
 yedges = np.arange((ypixels_ONI + 1) * scaling_factor)
+
+
+def cnt2mask(imgshape, contours):
+    # create empty image
+    mask = np.zeros(imgshape, dtype=np.uint8)
+    # draw contour
+    for cnt in contours:
+        cv2.fillPoly(mask, [cnt], (255))
+    return mask
+
+
+def pltcontours_all(img, contours, vmin, vmax):
+    plt.figure()
+    # Contrast stretching
+    plt.imshow(img, cmap="Blues", vmin=vmin, vmax=vmax)
+    for cnt in contours:
+        x = cnt[:, 0][:, 0]
+        y = cnt[:, 0][:, 1]
+        plt.plot(x, y, "-", color="black", linewidth=2)
+        # still the last closing line will be missing, get it below
+        xlast = [x[-1], x[0]]
+        ylast = [y[-1], y[0]]
+        plt.plot(xlast, ylast, "-", color="black", linewidth=2)
+    plt.xlim(0, img.shape[0])
+    plt.ylim(0, img.shape[1])
+    plt.tight_layout()
+    plt.axis("scaled")
+    plt.axis("off")
+
+
+def plt_cnt_tracks_individual(img, cnt, df_track, vmin, vmax, box_x_range, box_y_range):
+    plt.figure()
+    plt.imshow(img, cmap="Blues", vmin=vmin, vmax=vmax)
+    x = cnt[:, 0][:, 0]
+    x = x - box_y_range[0]
+    y = cnt[:, 0][:, 1]
+    y = y - box_x_range[0]
+    plt.plot(x, y, "-", color="black", linewidth=2)
+    xlast = [x[-1], x[0]]
+    ylast = [y[-1], y[0]]
+    plt.plot(xlast, ylast, "-", color="black", linewidth=2)
+    trackIDs = df_track["trackID"].unique()
+    for trackID in trackIDs:
+        plt.plot(
+            df_track[df_track["trackID"] == trackID].y,
+            df_track[df_track["trackID"] == trackID].x,
+            ".-r",
+            alpha=0.1,
+        )
+    plt.show()
 
 
 def spots2PAINT(df):
@@ -81,13 +137,101 @@ def spots2PAINT(df):
     return img_PAINT
 
 
-for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
-    df = pd.read_csv(fname_left)
+def cnt2box(cnt):
+    # Note that the x and y of contours coordinates are swapped in cv2
+    center_x = (cnt[:, 0][:, 1].max() + cnt[:, 0][:, 1].min()) / 2
+    range_x = cnt[:, 0][:, 1].max() - cnt[:, 0][:, 1].min()
+    center_y = (cnt[:, 0][:, 0].max() + cnt[:, 0][:, 0].min()) / 2
+    range_y = cnt[:, 0][:, 0].max() - cnt[:, 0][:, 0].min()
+    box_halfwidth = (np.max([range_x, range_y]) + box_padding * 2) / 2
+    box_x_range = (
+        math.floor(center_x - box_halfwidth),
+        math.ceil(center_x + box_halfwidth),
+    )
+    box_y_range = (
+        math.floor(center_y - box_halfwidth),
+        math.ceil(center_y + box_halfwidth),
+    )
+    if box_x_range[0] < 0:
+        box_x_min = 0
+    else:
+        box_x_min = box_x_range[0]
 
+    if box_x_range[1] > xpixels_ONI:
+        box_x_max = xpixels_ONI
+    else:
+        box_x_max = box_x_range[1]
+
+    if box_y_range[0] < 0:
+        box_y_min = 0
+    else:
+        box_y_min = box_y_range[0]
+
+    if box_y_range[1] > ypixels_ONI:
+        box_y_max = ypixels_ONI
+    else:
+        box_y_max = box_y_range[1]
+
+    box_x_range_final = (box_x_min, box_x_max)
+    box_y_range_final = (box_y_min, box_y_max)
+
+    return box_x_range_final, box_y_range_final
+
+
+def center_track_coordinates(df_in, box_x_range, box_y_range):
+    selector = (
+        (df_left.x > box_x_range[0])
+        & (df_left.x < box_x_range[1])
+        & (df_left.y > box_y_range[0])
+        & (df_left.y < box_y_range[1])
+    )
+    df_in_box = df_in.loc[selector]
+    # -0.5 to counter the fact that imshow grid starts from the edge not center
+    track_x = df_in_box["x"].to_numpy(float) - box_x_range[0] - 0.5
+    track_y = df_in_box["y"].to_numpy(float) - box_y_range[0] - 0.5
+    df_in_box["x"] = track_x
+    df_in_box["y"] = track_y
+    return df_in_box
+
+
+for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
     ## Reconstruct PAINT image
-    img_PAINT = spots2PAINT(df)
+    df_left = pd.read_csv(fname_left)
+    img_PAINT_left = spots2PAINT(df_left)
     print("Left channel PAINT reconstruction done.")
-    img_PAINT_final = img_as_uint(img_PAINT / img_PAINT.max())
+    df_right = pd.read_csv(fname_right)
+    img_PAINT_right = spots2PAINT(df_right)
+    print("Right channel PAINT reconstruction done.")
+
+    ## Split to individual condensates
+    img_denoise = gaussian_filter(img_PAINT_left, sigma=1)
+    edges = img_denoise > 5
+    # find contours coordinates in binary edge image. contours here is a list of np.arrays containing all coordinates of each individual edge/contour.
+    contours, _ = cv2.findContours(edges * 1, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
+    # filter out small condensates
+    contours_filtered = [
+        cnt for cnt in contours if cv2.contourArea(cnt) > condensate_area_threshold
+    ]
+
+    for cnt in contours_filtered:
+        ## determine a square box for individual condensate
+        box_x_range, box_y_range = cnt2box(cnt)
+
+        ## center both cnt and tracks coordinates within the box
+        cnt_x = cnt[:, 0][:, 0]
+        cnt_x = cnt_x - box_y_range[0]
+        cnt_y = cnt[:, 0][:, 1]
+        cnt_y = cnt_y - box_x_range[0]
+        df_left_inbox = center_track_coordinates(df_left, box_x_range, box_y_range)
+        df_right_inbox = center_track_coordinates(df_right, box_x_range, box_y_range)
+
+        ## crop img_PAINT by the box
+        img_PAINT_left_inbox = img_PAINT_left[
+            box_y_range[0] : box_y_range[1], box_x_range[0] : box_x_range[1]
+        ]
+        img_PAINT_right_inbox = img_PAINT_right[
+            box_y_range[0] : box_y_range[1], box_x_range[0] : box_x_range[1]
+        ]
 
     fname_save = (
         fname_left.split("-spot")[0]
@@ -125,7 +269,7 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
     )
 
     # put them in grid, calculate mean
-    img_stepsize = np.zeros_like(img_PAINT)
+    img_stepsize = np.zeros_like(img_PAINT_left)
     for x in track(
         range(img_stepsize.shape[0]), description=fname + ":mean step size image"
     ):
