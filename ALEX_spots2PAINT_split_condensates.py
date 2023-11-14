@@ -373,6 +373,8 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
             fname_save_prefix + "RlocRstep.png",
         )
 
+        condensateID += 1
+
 
 # def pltcontours_all(img, contours, vmin, vmax):
 #     plt.figure()
