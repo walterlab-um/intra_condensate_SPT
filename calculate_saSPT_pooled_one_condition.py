@@ -82,7 +82,7 @@ def reformat_for_saSPT(df_AIO):
 
 ## For only mobile molecules
 
-df_mobile = df_single_condition[df_single_condition["max_d_anytwo_nm"] > 200]
+df_mobile = df_single_condition[df_single_condition["mean_stepsize_nm"] > 30]
 df_saSPT_input = reformat_for_saSPT(df_mobile)
 # saSPT
 SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)

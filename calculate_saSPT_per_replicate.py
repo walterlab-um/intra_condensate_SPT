@@ -28,15 +28,15 @@ lst_AIO_files = list(fd.askopenfilenames())
 save_folder = dirname(lst_AIO_files[0])
 os.chdir(save_folder)
 
-# Displacement threshold for non static molecules
-threshold_disp = 0.2  # unit: um
+# mean_stepsize_nm threshold for non static molecules
+mean_stepsize_nm = 30  # unit: nm
 # Note that the AIO format has a intrisic threshold of 8 steps for each track since it calculates apparent D.
 
 
 def reformat_for_saSPT(df_AIO):
-    global threshold_disp
+    global mean_stepsize_nm
 
-    df_mobile = df_AIO[df_AIO["Displacement_um"] >= threshold_disp]
+    df_mobile = df_AIO[df_AIO["mean_stepsize_nm"] >= mean_stepsize_nm]
 
     lst_x = []
     for array_like_string in df_mobile["list_of_x"].to_list():
