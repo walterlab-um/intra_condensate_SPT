@@ -335,49 +335,49 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
         )
 
         ## Plot correlations
-        mask = img_PAINT_left_inbox + img_PAINT_right_inbox > sum_loc_threshold
-        plot_correlation(
-            img_PAINT_left_inbox[mask],
-            img_PAINT_right_inbox[mask],
-            "FUS PAINT, #/pixel",
-            "RNA PAINT, #/pixel",
-            fname_save_prefix + "FlocRloc.png",
-        )
-        plot_correlation(
-            img_stepsize_left_smoothed[mask],
-            img_stepsize_right_smoothed[mask],
-            r"FUS Step Size, $\mu$m",
-            r"RNA Step Size, $\mu$m",
-            fname_save_prefix + "FstepRstep.png",
-        )
-        plot_correlation(
-            img_PAINT_left_inbox[mask],
-            img_stepsize_right_smoothed[mask],
-            "FUS PAINT, #/pixel",
-            r"RNA Step Size, $\mu$m",
-            fname_save_prefix + "FlocRstep.png",
-        )
-        plot_correlation(
-            img_stepsize_left_smoothed[mask],
-            img_PAINT_right_inbox[mask],
-            r"FUS Step Size, $\mu$m",
-            "RNA PAINT, #/pixel",
-            fname_save_prefix + "FstepRloc.png",
-        )
-        plot_correlation(
-            img_PAINT_left_inbox[mask],
-            img_stepsize_left_smoothed[mask],
-            "FUS PAINT, #/pixel",
-            r"FUS Step Size, $\mu$m",
-            fname_save_prefix + "FlocFstep.png",
-        )
-        plot_correlation(
-            img_PAINT_right_inbox[mask],
-            img_stepsize_right_smoothed[mask],
-            "RNA PAINT, #/pixel",
-            r"RNA Step Size, $\mu$m",
-            fname_save_prefix + "RlocRstep.png",
-        )
+        # mask = img_PAINT_left_inbox + img_PAINT_right_inbox > sum_loc_threshold
+        # plot_correlation(
+        #     img_PAINT_left_inbox[mask],
+        #     img_PAINT_right_inbox[mask],
+        #     "FUS PAINT, #/pixel",
+        #     "RNA PAINT, #/pixel",
+        #     fname_save_prefix + "FlocRloc.png",
+        # )
+        # plot_correlation(
+        #     img_stepsize_left_smoothed[mask],
+        #     img_stepsize_right_smoothed[mask],
+        #     r"FUS Step Size, $\mu$m",
+        #     r"RNA Step Size, $\mu$m",
+        #     fname_save_prefix + "FstepRstep.png",
+        # )
+        # plot_correlation(
+        #     img_PAINT_left_inbox[mask],
+        #     img_stepsize_right_smoothed[mask],
+        #     "FUS PAINT, #/pixel",
+        #     r"RNA Step Size, $\mu$m",
+        #     fname_save_prefix + "FlocRstep.png",
+        # )
+        # plot_correlation(
+        #     img_stepsize_left_smoothed[mask],
+        #     img_PAINT_right_inbox[mask],
+        #     r"FUS Step Size, $\mu$m",
+        #     "RNA PAINT, #/pixel",
+        #     fname_save_prefix + "FstepRloc.png",
+        # )
+        # plot_correlation(
+        #     img_PAINT_left_inbox[mask],
+        #     img_stepsize_left_smoothed[mask],
+        #     "FUS PAINT, #/pixel",
+        #     r"FUS Step Size, $\mu$m",
+        #     fname_save_prefix + "FlocFstep.png",
+        # )
+        # plot_correlation(
+        #     img_PAINT_right_inbox[mask],
+        #     img_stepsize_right_smoothed[mask],
+        #     "RNA PAINT, #/pixel",
+        #     r"RNA Step Size, $\mu$m",
+        #     fname_save_prefix + "RlocRstep.png",
+        # )
 
         condensateID += 1
 
