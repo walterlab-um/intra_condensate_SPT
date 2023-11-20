@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from copy import deepcopy
 import numpy as np
 import pandas as pd
+import pickle
 from rich.progress import track
 
 matplotlib.use("Agg")
@@ -311,6 +312,7 @@ for fname_left, fname_right in zip(lst_fname_left, lst_fname_right):
         imwrite(fname_save_prefix + "right-PAINT.tif", img_PAINT_right_inbox)
         imwrite(fname_save_prefix + "left-stepsize.tif", img_stepsize_left_smoothed)
         imwrite(fname_save_prefix + "right-stepsize.tif", img_stepsize_right_smoothed)
+        pickle.dump(cnt_centered, open(fname_save_prefix + "cnt_centered.p", "wb"))
         plt_cnt_tracks_individual(
             img_PAINT_left_inbox,
             cnt,
