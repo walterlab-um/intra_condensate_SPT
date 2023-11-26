@@ -18,7 +18,7 @@ matplotlib.use("Agg")
 pd.options.mode.chained_assignment = None  # default='warn'
 
 print(
-    "Choose BOTH left-spots_reformatted AND right-spots_reformatted csv files from ALEX SPT-PAINT experiment:"
+    "Choose BOTH 'left-spots_reformatted' AND 'right-spots_reformatted' csv files from ALEX SPT-PAINT experiment (Note that the file names must match EXACTLY):"
 )
 lst_path = list(fd.askopenfilenames())
 
