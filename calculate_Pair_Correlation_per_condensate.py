@@ -8,6 +8,7 @@ from os.path import join
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pickle
 from rich.progress import track
 
 pd.options.mode.chained_assignment = None  # default='warn'
@@ -234,7 +235,8 @@ def PairCorr_with_edge_correction(df_ref, df_interest, mask):
 
 lst_cross = []
 lst_autoFUS = []
-lst_size = []
+lst_size_FUS = []
+lst_size_RNA = []
 for i in track(range(len(lst_fname_left_csv))):
     print("Now processing:", lst_fname_left_csv[i][:-9])
 
@@ -265,8 +267,6 @@ for i in track(range(len(lst_fname_left_csv))):
 
     cross, auto_FUS = PairCorr_with_edge_correction(df_left, df_right, mask)
 
-    data_size = df_left.shape[0]
-
     plt.figure(figsize=(5, 3))
     plt.axhline(1, c="k", ls="--")
     plt.plot(bins, auto_FUS, "b", label="Auto, FUS")
@@ -286,7 +286,24 @@ for i in track(range(len(lst_fname_left_csv))):
 
     lst_cross.append(cross)
     lst_autoFUS.append(auto_FUS)
-    lst_size.append(data_size)
+    lst_size_FUS.append(df_left.shape[0])
+    lst_size_RNA.append(df_right.shape[0])
+
+
+dict_to_save = {
+    "filenames_FUS": lst_fname_left_csv,
+    "filenames_RNA": lst_fname_right_csv,
+    "lst_N_locations_FUS": lst_size_FUS,
+    "lst_N_locations_RNA": lst_size_RNA,
+    "lst_cross_pair_correlation": lst_cross,
+    "lst_autoFUS_pair_correlation": lst_autoFUS,
+}
+pickle.dump(
+    dict_to_save,
+    open(join(folder_save, lst_fname_left_csv[i][:-9] + "-PairCorr-DataDict.p"), "wb"),
+)
+print("Saved successfully at the following path:")
+print(join(folder_save, lst_fname_left_csv[i][:-9] + "-PairCorr-DataDict.p"))
 
 
 # def filter_tracksonly(df):
