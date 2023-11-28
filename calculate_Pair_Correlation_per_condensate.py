@@ -237,7 +237,7 @@ lst_cross = []
 lst_autoFUS = []
 lst_size_FUS = []
 lst_size_RNA = []
-for i in track(range(len(lst_fname_left_csv))):
+for i in range(len(lst_fname_left_csv)):
     print("Now processing:", lst_fname_left_csv[i][:-9])
 
     df_left = pd.read_csv(lst_fname_left_csv[i])
