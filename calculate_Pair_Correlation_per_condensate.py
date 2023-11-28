@@ -13,19 +13,10 @@ from rich.progress import track
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
-folder_data = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT/selected_condensates_best"
+
+folder_data = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT/selected_condensates_better"
 os.chdir(folder_data)
 folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT"
-
-all_files = os.listdir(".")
-lst_fname_left_csv = [f for f in all_files if f.endswith("left.csv")]
-lst_fname_left_PAINT = [
-    f.split("left.csv")[0] + "left-PAINT.tif" for f in lst_fname_left_csv
-]
-lst_fname_right_csv = [f.split("left.csv")[0] + "right.csv" for f in lst_fname_left_csv]
-lst_fname_right_PAINT = [
-    f.split("left.csv")[0] + "right-PAINT.tif" for f in lst_fname_left_csv
-]
 
 # Parameters
 nm_per_pxl = 117  # ONI scale
@@ -37,6 +28,20 @@ bins = np.arange(
 )  # overlaping bins (sliding window)
 # round UP for boundary correction, see function PairCorrelation_perCell()
 r_max_pxl = math.ceil(r_max_nm / 117)
+# calculate pair correlation of track mean location or spots locations
+perTrack_perLoc_switch = "perTrack"
+# perTrack_perLoc_switch = "perLoc"
+
+
+all_files = os.listdir(".")
+lst_fname_left_csv = [f for f in all_files if f.endswith("left.csv")]
+lst_fname_left_PAINT = [
+    f.split("left.csv")[0] + "left-PAINT.tif" for f in lst_fname_left_csv
+]
+lst_fname_right_csv = [f.split("left.csv")[0] + "right.csv" for f in lst_fname_left_csv]
+lst_fname_right_PAINT = [
+    f.split("left.csv")[0] + "right-PAINT.tif" for f in lst_fname_left_csv
+]
 
 
 def cnt2mask(imgshape, contours):
@@ -105,7 +110,7 @@ def corr_within_mask(df, mask):
     return array_x, array_y
 
 
-def filter_tracks(df):
+def filter_perLoc(df):
     scaling_factor = 1
     tracklength_threshold = 10
     # single-frame spots
@@ -155,6 +160,27 @@ def filter_tracks(df):
         },
         dtype=float,
     )
+
+    return df_out
+
+
+def filter_perTrack(df):
+    scaling_factor = 1
+    tracklength_threshold = 3
+    df_tracks = df[df["trackID"].notna()]
+    all_trackID = df_tracks["trackID"].unique()
+    lst_x = []
+    lst_y = []
+    for trackID in all_trackID:
+        df_current = df_tracks[df_tracks["trackID"] == trackID]
+        if df_current.shape[0] >= tracklength_threshold:
+            lst_x.append(df_current["x"].mean() * scaling_factor)
+            lst_y.append(df_current["y"].mean() * scaling_factor)
+
+    tracks_x = np.array(lst_x, dtype=float)
+    tracks_y = np.array(lst_y, dtype=float)
+
+    df_out = pd.DataFrame({"x": tracks_x, "y": tracks_y}, dtype=float)
 
     return df_out
 
@@ -260,10 +286,15 @@ for i in range(len(lst_fname_left_csv)):
 
     mask = Polygon(np.squeeze(cnt_condensate))
 
-    # df_left = filter_tracksonly(df_left)
-    df_left = filter_tracks(df_left)
-    # df_right = filter_tracksonly(df_right)
-    df_right = filter_tracks(df_right)
+    if perTrack_perLoc_switch == "perLoc":
+        df_left = filter_perLoc(df_left)
+        df_right = filter_perLoc(df_right)
+    elif perTrack_perLoc_switch == "perTrack":
+        df_left = filter_perTrack(df_left)
+        df_right = filter_perTrack(df_right)
+    else:
+        print("perTrack_perLoc_switch is missing or not one of 'perLoc' or 'perTrack'")
+        exit
 
     cross, auto_FUS = PairCorr_with_edge_correction(df_left, df_right, mask)
 
@@ -300,31 +331,10 @@ dict_to_save = {
 }
 pickle.dump(
     dict_to_save,
-    open(join(folder_save, lst_fname_left_csv[i][:-9] + "-PairCorr-DataDict.p"), "wb"),
+    open(join(folder_save, "PairCorr-DataDict.p"), "wb"),
 )
 print("Saved successfully at the following path:")
-print(join(folder_save, lst_fname_left_csv[i][:-9] + "-PairCorr-DataDict.p"))
-
-
-# def filter_tracksonly(df):
-#     scaling_factor = 1
-#     tracklength_threshold = 5
-#     df_tracks = df[df["trackID"].notna()]
-#     all_trackID = df_tracks["trackID"].unique()
-#     lst_x = []
-#     lst_y = []
-#     for trackID in all_trackID:
-#         df_current = df_tracks[df_tracks["trackID"] == trackID]
-#         if df_current.shape[0] >= tracklength_threshold:
-#             lst_x.append(df_current["x"].mean() * scaling_factor)
-#             lst_y.append(df_current["y"].mean() * scaling_factor)
-
-#     tracks_x = np.array(lst_x, dtype=float)
-#     tracks_y = np.array(lst_y, dtype=float)
-
-#     df_out = pd.DataFrame({"x": tracks_x, "y": tracks_y}, dtype=float)
-
-#     return df_out
+print(join(folder_save, "PairCorr-DataDict.p"))
 
 
 # def spots2PAINT_single_condensate(df, frame_size_x, frame_size_y):
@@ -340,26 +350,26 @@ print(join(folder_save, lst_fname_left_csv[i][:-9] + "-PairCorr-DataDict.p"))
 #     return img_PAINT
 
 
-plt.imshow(
-    spots2PAINT_single_condensate(
-        df_left, img_PAINT_left.shape[1], img_PAINT_left.shape[0]
-    ),
-    cmap="Blues",
-    vmin=0,
-    vmax=5,
-)
-x, y = mask_large.exterior.xy
-plt.plot(x, y, "k")
-plt.savefig("21-PAINT_left.png", format="png", dpi=300, bbox_inches="tight")
+# plt.imshow(
+#     spots2PAINT_single_condensate(
+#         df_left, img_PAINT_left.shape[1], img_PAINT_left.shape[0]
+#     ),
+#     cmap="Blues",
+#     vmin=0,
+#     vmax=5,
+# )
+# x, y = mask_large.exterior.xy
+# plt.plot(x, y, "k")
+# plt.savefig("21-PAINT_left.png", format="png", dpi=300, bbox_inches="tight")
 
-plt.imshow(
-    spots2PAINT_single_condensate(
-        df_right, img_PAINT_right.shape[1], img_PAINT_right.shape[0]
-    ),
-    cmap="Reds",
-    vmin=0,
-    vmax=5,
-)
-x, y = mask_large.exterior.xy
-plt.plot(x, y, "k")
-plt.savefig("21-PAINT_right.png", format="png", dpi=300, bbox_inches="tight")
+# plt.imshow(
+#     spots2PAINT_single_condensate(
+#         df_right, img_PAINT_right.shape[1], img_PAINT_right.shape[0]
+#     ),
+#     cmap="Reds",
+#     vmin=0,
+#     vmax=5,
+# )
+# x, y = mask_large.exterior.xy
+# plt.plot(x, y, "k")
+# plt.savefig("21-PAINT_right.png", format="png", dpi=300, bbox_inches="tight")
