@@ -4,25 +4,37 @@ from tifffile import imread
 import cv2
 import math
 import os
-from os.path import join
+from os.path import join, dirname
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import pickle
 from tqdm import tqdm
 from multiprocessing import Pool, cpu_count
+from tkinter import filedialog as fd
 
 pd.options.mode.chained_assignment = None  # default='warn'
 
+"""
+The program calculates per-track Pair Correlation Function (PCF; aka. Radial Distribution Function, RDF) of two channel single partical tracking (SPT) data.
 
-folder_data = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT/pooled_better_best"
+Per-track means every single trajectory in the SPT dataset is treated as a single point, using the mean location of the track. Such point set is then subjected to PCF calculation.
+
+It saves four PCF with corresponding informatioon in a single pickle file:
+1. auto PCF of channel 1 (FUS)
+2. auto PCF of channel 2 (RNA)
+3. cross PCF using channel 1 (FUS) spots as reference
+4. cross PCF using channel 2 (RNA) spots as reference, which is theoretically equivalent to 3 and is provided as a fact check.
+"""
+
+print(
+    "Choose all tif and csv files to be batch proccessed. The prefix should be the same for (1) left.csv (2) right.csv (3) left-PAINT.tif (4) right-PAINT.tif"
+)
+lst_files = list(fd.askopenfilenames())
+folder_data = dirname(lst_files[0])
 os.chdir(folder_data)
-folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT/"
-# calculate pair correlation of track mean location or spots locations
-# perTrack_perLoc_switch = "perTrack"
-# fname_save = "PairCorr-DataDict-pooled-perTrack.p"
-perTrack_perLoc_switch = "perLoc"
-fname_save = "PairCorr-DataDict-pooled-perLoc.p"
+folder_save = "../"
+fname_save = "PairCorr-DataDict-pooled-perTrack.p"
 
 # Parameters
 nm_per_pxl = 117  # ONI scale
@@ -284,15 +296,8 @@ def process_file(i):
 
     mask = Polygon(np.squeeze(cnt_condensate))
 
-    if perTrack_perLoc_switch == "perLoc":
-        df_left = filter_perLoc(df_left)
-        df_right = filter_perLoc(df_right)
-    elif perTrack_perLoc_switch == "perTrack":
-        df_left = filter_perTrack(df_left)
-        df_right = filter_perTrack(df_right)
-    else:
-        print("perTrack_perLoc_switch is missing or not one of 'perLoc' or 'perTrack'")
-        exit
+    df_left = filter_perTrack(df_left)
+    df_right = filter_perTrack(df_right)
 
     cross_FUSref, auto_FUS = PairCorr_with_edge_correction(df_left, df_right, mask)
     cross_RNAref, auto_RNA = PairCorr_with_edge_correction(df_right, df_left, mask)
@@ -363,41 +368,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# def spots2PAINT_single_condensate(df, frame_size_x, frame_size_y):
-#     # The whole df would be used for reconstructure, dispite track or spot
-#     tracklength_threshold = 10
-#     xedges = np.arange(frame_size_x + 1)
-#     yedges = np.arange(frame_size_y + 1)
-#     img_PAINT, _, _ = np.histogram2d(
-#         x=df["x"].to_numpy(float),
-#         y=df["y"].to_numpy(float),
-#         bins=(xedges, yedges),
-#     )
-#     return img_PAINT
-
-
-# plt.imshow(
-#     spots2PAINT_single_condensate(
-#         df_left, img_PAINT_left.shape[1], img_PAINT_left.shape[0]
-#     ),
-#     cmap="Blues",
-#     vmin=0,
-#     vmax=5,
-# )
-# x, y = mask_large.exterior.xy
-# plt.plot(x, y, "k")
-# plt.savefig("21-PAINT_left.png", format="png", dpi=300, bbox_inches="tight")
-
-# plt.imshow(
-#     spots2PAINT_single_condensate(
-#         df_right, img_PAINT_right.shape[1], img_PAINT_right.shape[0]
-#     ),
-#     cmap="Reds",
-#     vmin=0,
-#     vmax=5,
-# )
-# x, y = mask_large.exterior.xy
-# plt.plot(x, y, "k")
-# plt.savefig("21-PAINT_right.png", format="png", dpi=300, bbox_inches="tight")
