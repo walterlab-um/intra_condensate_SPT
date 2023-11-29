@@ -19,9 +19,10 @@ folder_data = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED
 os.chdir(folder_data)
 folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT/"
 # calculate pair correlation of track mean location or spots locations
-perTrack_perLoc_switch = "perTrack"
-# perTrack_perLoc_switch = "perLoc"
-fname_save = "PairCorr-DataDict-pooled-perTrack.p"
+# perTrack_perLoc_switch = "perTrack"
+# fname_save = "PairCorr-DataDict-pooled-perTrack.p"
+perTrack_perLoc_switch = "perLoc"
+fname_save = "PairCorr-DataDict-pooled-perLoc.p"
 
 # Parameters
 nm_per_pxl = 117  # ONI scale
@@ -357,7 +358,7 @@ def main():
         open(join(folder_save, fname_save), "wb"),
     )
     print("Saved successfully at the following path:")
-    print(join(folder_save, "PairCorr-DataDict.p"))
+    print(join(folder_save, fname_save))
 
 
 if __name__ == "__main__":
