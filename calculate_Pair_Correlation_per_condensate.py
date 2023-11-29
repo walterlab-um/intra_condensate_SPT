@@ -14,9 +14,9 @@ from rich.progress import track
 pd.options.mode.chained_assignment = None  # default='warn'
 
 
-folder_data = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT/selected_condensates_better"
+folder_data = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT/selected_condensates_best"
 os.chdir(folder_data)
-folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT"
+folder_save = "/Volumes/lsa-nwalter/Guoming_Gao_turbo/Walterlab_server/PROCESSED_DATA/RNA-diffusion-in-FUS/RNAinFUS_PaperFigures/Fig3_coralled by nano domains/FUS488_FL_PAINT/pair_correlation_FUSperTrack_RNAperTrack_best/"
 
 # Parameters
 nm_per_pxl = 117  # ONI scale
@@ -304,7 +304,7 @@ for i in range(len(lst_fname_left_csv)):
     plt.plot(bins, cross, "r", label="Cross")
     plt.legend(frameon=False)
     plt.xlim(bins[1], bins[-1])
-    plt.ylim(0, 2.3)
+    plt.ylim(0, 2)
     plt.xlabel("r, nm")
     plt.ylabel("G(r)")
     plt.savefig(
@@ -328,6 +328,11 @@ dict_to_save = {
     "lst_N_locations_RNA": lst_size_RNA,
     "lst_cross_pair_correlation": lst_cross,
     "lst_autoFUS_pair_correlation": lst_autoFUS,
+    "nm_per_pxl": nm_per_pxl,
+    "r_max_nm": r_max_nm,
+    "ringwidth_nm": ringwidth_nm,
+    "dr_slidingrings_nm": dr_slidingrings_nm,
+    "bins": bins,
 }
 pickle.dump(
     dict_to_save,
