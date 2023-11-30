@@ -59,7 +59,6 @@ cmap_dark2cyan = clr.LinearSegmentedColormap.from_list(
     N=200,
 )
 
-
 all_files = os.listdir(".")
 lst_fname_left_csv = [f for f in all_files if f.endswith("left.csv")]
 lst_fname_left_PAINT = [
