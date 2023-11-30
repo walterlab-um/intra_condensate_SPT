@@ -27,37 +27,6 @@ It saves four PCF with corresponding informatioon in a single pickle file:
 4. cross PCF using channel 2 (RNA) spots as reference, which is theoretically equivalent to 3 and is provided as a fact check.
 """
 
-print(
-    "Choose all tif and csv files to be batch proccessed. The prefix should be the same for (1) left.csv (2) right.csv (3) left-PAINT.tif (4) right-PAINT.tif"
-)
-lst_files = list(fd.askopenfilenames())
-folder_data = dirname(lst_files[0])
-os.chdir(folder_data)
-folder_save = "../"
-fname_save = "PairCorr-DataDict-pooled-perTrack.p"
-
-# Parameters
-nm_per_pxl = 117  # ONI scale
-r_max_nm = 1120
-ringwidth_nm = 100
-dr_slidingrings_nm = 20  # stepsize between adjascent overlaping rings, nm
-bins = np.arange(
-    0, r_max_nm - ringwidth_nm, dr_slidingrings_nm
-)  # overlaping bins (sliding window)
-# round UP for boundary correction, see function PairCorrelation_perCell()
-r_max_pxl = math.ceil(r_max_nm / 117)
-
-
-all_files = os.listdir(".")
-lst_fname_left_csv = [f for f in all_files if f.endswith("left.csv")]
-lst_fname_left_PAINT = [
-    f.split("left.csv")[0] + "left-PAINT.tif" for f in lst_fname_left_csv
-]
-lst_fname_right_csv = [f.split("left.csv")[0] + "right.csv" for f in lst_fname_left_csv]
-lst_fname_right_PAINT = [
-    f.split("left.csv")[0] + "right-PAINT.tif" for f in lst_fname_left_csv
-]
-
 
 def cnt2mask(imgshape, contours):
     # create empty image
@@ -66,48 +35,6 @@ def cnt2mask(imgshape, contours):
     for cnt in contours:
         cv2.fillPoly(mask, [cnt], (255))
     return mask
-
-
-def single_condensate_stepsize_img(df_track, img_shape):
-    ## Reconstruct step size iamge, unit: um
-    lst_mid_x = []
-    lst_mid_y = []
-    lst_stepsize = []
-    all_trackID = df_track["trackID"].unique()
-    for trackID in all_trackID:
-        df_current = df_track[df_track["trackID"] == trackID]
-        xs = df_current["x"].to_numpy(float)
-        ys = df_current["y"].to_numpy(float)
-        mid_xs = (xs[1:] + xs[:-1]) / 2
-        mid_ys = (ys[1:] + ys[:-1]) / 2
-        steps = (
-            np.sqrt((xs[1:] - xs[:-1]) ** 2 + (ys[1:] - ys[:-1]) ** 2) * um_per_pixel
-        )
-        lst_mid_x.extend(mid_xs)
-        lst_mid_y.extend(mid_ys)
-        lst_stepsize.extend(steps)
-
-    df_all_steps = pd.DataFrame(
-        {
-            "mid_x": lst_mid_x,
-            "mid_y": lst_mid_y,
-            "stepsize": lst_stepsize,
-        },
-        dtype=float,
-    )
-
-    # put them in grid, calculate mean
-    img_stepsize = np.zeros(img_shape)
-    for x in range(img_stepsize.shape[0]):
-        for y in range(img_stepsize.shape[1]):
-            df_current = df_all_steps[
-                df_all_steps["mid_x"].between(x, x + 1)
-                & df_all_steps["mid_y"].between(y, y + 1)
-            ]
-            mean_stepsize = df_current["stepsize"].mean()
-            img_stepsize[x, y] = mean_stepsize
-
-    return img_stepsize
 
 
 def corr_within_mask(df, mask):
@@ -200,7 +127,9 @@ def filter_perTrack(df):
     return df_out
 
 
-def PairCorr_with_edge_correction(df_ref, df_interest, mask):
+def PairCorr_with_edge_correction(
+    df_ref, df_interest, mask, nm_per_pxl, r_max_nm, ringwidth_nm, dr_slidingrings_nm
+):
     # only count particles within mask
     x_ref, y_ref = corr_within_mask(df_ref, mask)
     x_interest, y_interest = corr_within_mask(df_interest, mask)
@@ -275,7 +204,17 @@ def PairCorr_with_edge_correction(df_ref, df_interest, mask):
 
 
 # Function to process a single file
-def process_file(i):
+def process_file(
+    i,
+    lst_fname_left_csv,
+    lst_fname_right_csv,
+    lst_fname_left_PAINT,
+    lst_fname_right_PAINT,
+    nm_per_pxl,
+    r_max_nm,
+    ringwidth_nm,
+    dr_slidingrings_nm,
+):
     df_left = pd.read_csv(lst_fname_left_csv[i])
     df_right = pd.read_csv(lst_fname_right_csv[i])
     img_PAINT_left = imread(lst_fname_left_PAINT[i])
@@ -299,10 +238,24 @@ def process_file(i):
     df_left = filter_perTrack(df_left)
     df_right = filter_perTrack(df_right)
 
-    cross_FUSref, auto_FUS = PairCorr_with_edge_correction(df_left, df_right, mask)
-    cross_RNAref, auto_RNA = PairCorr_with_edge_correction(df_right, df_left, mask)
-
-    # print(lst_fname_left_csv[i][:-9], "Done!")
+    cross_FUSref, auto_FUS = PairCorr_with_edge_correction(
+        df_left,
+        df_right,
+        mask,
+        nm_per_pxl,
+        r_max_nm,
+        ringwidth_nm,
+        dr_slidingrings_nm,
+    )
+    cross_RNAref, auto_RNA = PairCorr_with_edge_correction(
+        df_right,
+        df_left,
+        mask,
+        nm_per_pxl,
+        r_max_nm,
+        ringwidth_nm,
+        dr_slidingrings_nm,
+    )
 
     return (
         cross_FUSref,
@@ -315,6 +268,35 @@ def process_file(i):
 
 
 def main():
+    print(
+        "Choose all tif and csv files to be batch proccessed. The prefix should be the same for (1) left.csv (2) right.csv (3) left-PAINT.tif (4) right-PAINT.tif"
+    )
+    lst_files = list(fd.askopenfilenames())
+    folder_data = dirname(lst_files[0])
+    os.chdir(folder_data)
+    folder_save = "../"
+    fname_save = "PairCorr-DataDict-pooled-perTrack.p"
+
+    # Parameters
+    nm_per_pxl = 117  # ONI scale
+    r_max_nm = 1120
+    ringwidth_nm = 100
+    dr_slidingrings_nm = 20  # stepsize between adjascent overlaping rings, nm
+    bins = np.arange(
+        0, r_max_nm - ringwidth_nm, dr_slidingrings_nm
+    )  # overlaping bins (sliding window)
+
+    all_files = os.listdir(".")
+    lst_fname_left_csv = [f for f in all_files if f.endswith("left.csv")]
+    lst_fname_left_PAINT = [
+        f.split("left.csv")[0] + "left-PAINT.tif" for f in lst_fname_left_csv
+    ]
+    lst_fname_right_csv = [
+        f.split("left.csv")[0] + "right.csv" for f in lst_fname_left_csv
+    ]
+    lst_fname_right_PAINT = [
+        f.split("left.csv")[0] + "right-PAINT.tif" for f in lst_fname_left_csv
+    ]
     # The tqdm library provides an easy way to visualize the progress of loops.
     pbar = tqdm(total=len(lst_fname_left_csv))
 
@@ -326,7 +308,21 @@ def main():
     with Pool(cpu_count()) as p:
         results = []
         for i in range(len(lst_fname_left_csv)):
-            result = p.apply_async(process_file, args=(i,), callback=update)
+            result = p.apply_async(
+                process_file,
+                args=(
+                    i,
+                    lst_fname_left_csv,
+                    lst_fname_right_csv,
+                    lst_fname_left_PAINT,
+                    lst_fname_right_PAINT,
+                    nm_per_pxl,
+                    r_max_nm,
+                    ringwidth_nm,
+                    dr_slidingrings_nm,
+                ),
+                callback=update,
+            )
             results.append(result)
 
         # Wait for all processes to finish and gather results
