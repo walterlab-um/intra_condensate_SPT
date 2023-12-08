@@ -2,6 +2,7 @@ import pandas as pd
 from tkinter import filedialog as fd
 from rich.progress import track
 
+# Input csv files are exported from TrackMate as "spots"
 
 print("Please choose the csv file(s) from TrackMate exported spots:")
 lst_files = list(fd.askopenfilenames())
