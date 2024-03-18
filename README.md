@@ -1,2 +1,2 @@
-# RNA SPT with in vitro Condensates
-RNA single molecule tracking within reconstituted condensates in vitro, exemplified by the tag-free full-length FUS condensates here.
+# Intra-Condensate SPT
+RNA and protein single molecule tracking (SMT) within optimally tethered reconstituted condensates in vitro, exemplified by a full-length tag-free form of model RNA-binding protien FUS condensates.
