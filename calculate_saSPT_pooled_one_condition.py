@@ -69,21 +69,11 @@ def reformat_for_saSPT(df_AIO):
     return df_saSPT_input
 
 
-## For all molecules
-
-# df_saSPT_input = reformat_for_saSPT(df_single_condition)
-# # saSPT
-# SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
-# df_save = SA.occupations_dataframe
-# fname_save = "saSPT-pooled-all-" + basename(fpath_single_condition).split("concat-")[-1]
-# df_save.to_csv(fname_save, index=False)
-# SA.plot_occupations(fname_save[:-4] + ".png")
-
-
-## For only mobile molecules
-
+# filter out immobile
 df_mobile = df_single_condition[df_single_condition["mean_stepsize_nm"] > 30]
-df_saSPT_input = reformat_for_saSPT(df_mobile)
+# filter out confined molecules
+df_normal = df_mobile[df_mobile["alpha"] > 0.7]  # default: 0.7
+df_saSPT_input = reformat_for_saSPT(df_normal)
 # saSPT
 SA = StateArray.from_detections(df_saSPT_input, **saSPT_settings)
 df_save = SA.occupations_dataframe
