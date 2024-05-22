@@ -5,7 +5,7 @@
 
 This repository contains Python scripts to analyze RNA and protein single molecule tracking (SMT) within biomolecular condensates, namely **intra-condensate SMT**.
 
-Please consider to cite: https://doi.org/xxxxx/xxxxxx
+Please consider to cite: https://doi.org/10.1101/2024.04.01.587651
 
 The article exemplify the use of intra-condensate SMT in optimally tethered Fused-in-Sarcoma (FUS) condensates *in vitro*, where this model RNA-binding  protein was purified in its full-length tag-free form to mimic the native ribonucleoprotein (RNP) granule in cells.
 
