@@ -9,7 +9,7 @@ import matplotlib.cm as cm
 box_size = 5.0  # microns
 time_resolution = 0.1  # seconds (100 ms)
 diffusion_coefficient = 0.8  # um^2/s
-total_time = 50.0  # seconds
+total_time = 10  # seconds
 circle_radius = 2.0  # microns
 circle_center = np.array([box_size / 2, box_size / 2])  # Center of the box
 num_initial_molecules = 50
@@ -17,7 +17,7 @@ mean_photobleaching_steps = 10
 mean_new_molecules_per_frame = 5
 
 # Output file path
-output_folder = "/Volumes/AnalysisGG/Dropbox/UMich_PhD/Nils_Walter_Lab/Writing/MyPublications/SMT_FUS_Nanodomain-Nat2024/simulations"
+output_folder = "/Users/GGM/Library/CloudStorage/Dropbox/UMich_PhD/Nils_Walter_Lab/Writing/MyPublications/SMT_FUS_Nanodomain-Nat2024/simulations"
 output_file = "simulate_FUS_without_nanodomain.csv"
 output_path = os.path.join(output_folder, output_file)
 
@@ -30,8 +30,8 @@ if circle_radius > box_size / 2:
 # Calculate the number of steps
 num_steps = int(total_time / time_resolution)
 
-# Calculate the step size (root mean square displacement)
-step_size = np.sqrt(2 * diffusion_coefficient * time_resolution)
+# Calculate the step size, MSD = 2nDt
+step_size = np.sqrt(4 * diffusion_coefficient * time_resolution)
 
 
 # Function to generate random positions within the circular region
@@ -48,9 +48,12 @@ def generate_random_positions(num_molecules, circle_center, circle_radius):
     return np.array(positions)
 
 
-# Initialize the positions and trackIDs of the molecules
+# Initialize the positions, photobleaching times, and trackIDs of the molecules
 positions = generate_random_positions(
     num_initial_molecules, circle_center, circle_radius
+)
+photobleaching_times = np.random.exponential(
+    mean_photobleaching_steps, num_initial_molecules
 )
 track_ids = np.arange(num_initial_molecules)
 
@@ -62,10 +65,6 @@ in_condensates = []
 condensate_radii = []
 step_sizes = []
 
-# Generate random photobleaching times for each molecule based on exponential distribution
-photobleaching_times = np.random.exponential(
-    mean_photobleaching_steps, num_initial_molecules
-)
 
 # Initialize the next available trackID
 next_track_id = num_initial_molecules
