@@ -27,7 +27,7 @@ lst_fname = [basename(f) for f in lst_path if f.endswith("spots_reformatted.csv"
 tracklength_threshold = 10  # distinguish long versus short tracks
 condensate_area_threshold = 200  # pixels
 box_padding = 3  # pixels padding arround each condensate contour
-sum_loc_threshold = 30  # PAINT threshold for summed PAINT signal from both channels
+sum_loc_threshold = 10  # PAINT threshold for summed PAINT signal from both channels
 
 um_per_pixel = 0.117
 scaling_factor = 1
@@ -239,10 +239,11 @@ for fname_left in lst_fname:
     ## Reconstruct PAINT image
     df_left = pd.read_csv(fname_left)
     img_PAINT_left = spots2PAINT(df_left)
+    imwrite(fname_left.split("-spot")[0] + "-PAINT.tif", img_PAINT_left)
 
     ## Split to individual condensates
     img_denoise = gaussian_filter(img_PAINT_left, sigma=1)
-    edges = img_denoise > 10
+    edges = img_denoise > sum_loc_threshold
     # find contours coordinates in binary edge image. contours here is a list of np.arrays containing all coordinates of each individual edge/contour.
     contours, _ = cv2.findContours(edges * 1, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
 
@@ -293,16 +294,16 @@ for fname_left in lst_fname:
         imwrite(fname_save_prefix + "left-PAINT.tif", img_PAINT_left_inbox)
         imwrite(fname_save_prefix + "left-stepsize.tif", img_stepsize_left_smoothed)
         pickle.dump(cnt_centered, open(fname_save_prefix + "cnt_centered.p", "wb"))
-        plt_cnt_tracks_individual(
-            img_PAINT_left_inbox,
-            cnt,
-            df_left_inbox,
-            0,
-            20,
-            box_x_range,
-            box_y_range,
-            "Blues",
-            fname_save_prefix + "left-PAINT_cnt_tracks.png",
-        )
+        # plt_cnt_tracks_individual(
+        #     img_PAINT_left_inbox,
+        #     cnt,
+        #     df_left_inbox,
+        #     0,
+        #     20,
+        #     box_x_range,
+        #     box_y_range,
+        #     "Blues",
+        #     fname_save_prefix + "left-PAINT_cnt_tracks.png",
+        # )
 
         condensateID += 1
