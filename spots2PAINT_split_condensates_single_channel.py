@@ -234,15 +234,17 @@ def cnt2mask(imgshape, contours):
     return mask
 
 
-for fname_left in lst_fname:
-    print("Now processing:", fname_left.split("-spot")[0])
+for fname_singlechannel in lst_fname:
+    print("Now processing:", fname_singlechannel.split("-spot")[0])
     ## Reconstruct PAINT image
-    df_left = pd.read_csv(fname_left)
-    img_PAINT_left = spots2PAINT(df_left)
-    imwrite(fname_left.split("-spot")[0] + "-PAINT.tif", img_PAINT_left)
+    df_singlechannel = pd.read_csv(fname_singlechannel)
+    img_PAINT_singlechannel = spots2PAINT(df_singlechannel)
+    imwrite(
+        fname_singlechannel.split("-spot")[0] + "-PAINT.tif", img_PAINT_singlechannel
+    )
 
     ## Split to individual condensates
-    img_denoise = gaussian_filter(img_PAINT_left, sigma=1)
+    img_denoise = gaussian_filter(img_PAINT_singlechannel, sigma=1)
     edges = img_denoise > sum_loc_threshold
     # find contours coordinates in binary edge image. contours here is a list of np.arrays containing all coordinates of each individual edge/contour.
     contours, _ = cv2.findContours(edges * 1, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
@@ -269,41 +271,54 @@ for fname_left in lst_fname:
         cnt_centered = deepcopy(cnt)
         cnt_centered[:, 0][:, 0] = cnt_centered[:, 0][:, 0] - box_y_range[0]
         cnt_centered[:, 0][:, 1] = cnt_centered[:, 0][:, 1] - box_x_range[0]
-        df_left_inbox = center_track_coordinates(df_left, box_x_range, box_y_range)
+        df_singlechannel_inbox = center_track_coordinates(
+            df_singlechannel, box_x_range, box_y_range
+        )
 
         ## crop img_PAINT by the box
-        img_PAINT_left_inbox = img_PAINT_left[
+        img_PAINT_singlechannel_inbox = img_PAINT_singlechannel[
             box_x_range[0] : box_x_range[1], box_y_range[0] : box_y_range[1]
         ]
 
         ## Calculate step size image
         box_shape = (np.ptp(box_x_range), np.ptp(box_y_range))
-        img_stepsize_left = single_condensate_stepsize_img(df_left_inbox, box_shape)
-        img_stepsize_left_smoothed = smooth_stepsize_img(img_stepsize_left, 1)
+        img_stepsize_singlechannel = single_condensate_stepsize_img(
+            df_singlechannel_inbox, box_shape
+        )
+        img_stepsize_singlechannel_smoothed = smooth_stepsize_img(
+            img_stepsize_singlechannel, 1
+        )
 
         ## save csv within box, img_PAINT, img_stepsize, and a plot with img_PAINT+cnt+tracks
         fname_save_prefix = (
-            fname_left.split("-spot")[0]
+            fname_singlechannel.split("-spot")[0]
             + "-threshold-"
             + str(tracklength_threshold)
             + "-condensateID-"
             + str(condensateID)
             + "-"
         )
-        df_left_inbox.to_csv(fname_save_prefix + "left.csv", index=False)
-        imwrite(fname_save_prefix + "left-PAINT.tif", img_PAINT_left_inbox)
-        imwrite(fname_save_prefix + "left-stepsize.tif", img_stepsize_left_smoothed)
+        df_singlechannel_inbox.to_csv(
+            fname_save_prefix + "singlechannel.csv", index=False
+        )
+        imwrite(
+            fname_save_prefix + "singlechannel-PAINT.tif", img_PAINT_singlechannel_inbox
+        )
+        imwrite(
+            fname_save_prefix + "singlechannel-stepsize.tif",
+            img_stepsize_singlechannel_smoothed,
+        )
         pickle.dump(cnt_centered, open(fname_save_prefix + "cnt_centered.p", "wb"))
         # plt_cnt_tracks_individual(
-        #     img_PAINT_left_inbox,
+        #     img_PAINT_singlechannel_inbox,
         #     cnt,
-        #     df_left_inbox,
+        #     df_singlechannel_inbox,
         #     0,
         #     20,
         #     box_x_range,
         #     box_y_range,
         #     "Blues",
-        #     fname_save_prefix + "left-PAINT_cnt_tracks.png",
+        #     fname_save_prefix + "singlechannel-PAINT_cnt_tracks.png",
         # )
 
         condensateID += 1
