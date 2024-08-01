@@ -48,6 +48,7 @@ def generate_random_positions_xy(num_molecules, condensate_center, condensate_R_
             if np.linalg.norm(pos - condensate_center) <= condensate_R_um:
                 positions.append(pos)
                 break
+    positions = np.array(positions)
     return positions[:, 0], positions[:, 1]
 
 
@@ -61,9 +62,7 @@ photobleaching_times = np.random.exponential(
 )
 
 # Create a DataFrame to store the trajectory information
-columns = ["trackID", "x_um", "y_um", "t_s", "box_size_um", "condensate_R_um"]
-df = pd.DataFrame(columns=columns)
-df = df.append(
+df = pd.DataFrame(
     {
         "trackID": track_ids,
         "x_um": arr_x,
@@ -72,7 +71,7 @@ df = df.append(
         "box_size_um": np.repeat(box_size, num_initial_molecules),
         "condensate_R_um": np.repeat(condensate_R_um, num_initial_molecules),
     },
-    ignore_index=True,
+    dtype=float,
 )
 
 # Initialize the next available trackID
@@ -83,8 +82,8 @@ for t in track(all_time, description="Simulating..."):
     # get all molecules from the previous update
     df_previous = df[df["t_s"] == t]
     # update all pre-existing molecules one by one
-    for j in range(positions.shape[0]):
-        # Generate random steps
+    for trackID in df_previous["trackID"]:
+        # Generate a single random step
         step = np.random.normal(0, step_size, 2)
         new_position = positions[j] + step
 
