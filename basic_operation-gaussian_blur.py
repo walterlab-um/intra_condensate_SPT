@@ -19,7 +19,7 @@ for f in track(lst_files):
         img_filtered = gaussian_filter(img, sigma=1)
         video_out.append(img_filtered)
     video_out = np.stack(video_out)
-    fsave = f[:-4] + "-gaussian.tif"
+    fsave = f[:-4] + "-smoothed.tif"
     if len(video.shape) < 3:  # image:
         imwrite(fsave, img_as_uint(video_out), imagej=True)
     elif len(video.shape) > 2:  # video:
