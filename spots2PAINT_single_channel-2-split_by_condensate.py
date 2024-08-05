@@ -1,4 +1,4 @@
-from tifffile import imwrite
+from tifffile import imwrite, imread
 from tkinter import filedialog as fd
 import os
 from os.path import dirname, basename
@@ -17,17 +17,23 @@ from rich.progress import track
 matplotlib.use("Agg")
 pd.options.mode.chained_assignment = None  # default='warn'
 
-print("Choose 'spots_reformatted.csv' files from single-channel SPT-PAINT experiment:")
-lst_path = list(fd.askopenfilenames())
+print(
+    "Choose 'spots_reformatted.csv' files from single-channel SPT-PAINT experiment. Please make sure reconstructed whole FOV PAINT tif files also exist within same folder:"
+)
+lst_path_csv = list(fd.askopenfilenames())
+print("Please type in a channel name:")
+channel_postfix = input()
 
-folder_save = dirname(lst_path[0])
+folder_save = dirname(lst_path_csv[0])
 os.chdir(folder_save)
-lst_fname = [basename(f) for f in lst_path if f.endswith("spots_reformatted.csv")]
+lst_fname_csv = [basename(f) for f in lst_path_csv]
 
 tracklength_threshold = 10  # distinguish long versus short tracks
-condensate_area_threshold = 200  # pixels
+sum_loc_threshold = (
+    10  # threshold for smoothed PAINT whole FOV image to pick up each condensate
+)
+condensate_area_threshold = 200  # threashold to pick only large condensates
 box_padding = 3  # pixels padding arround each condensate contour
-sum_loc_threshold = 10  # PAINT threshold for summed PAINT signal from both channels
 
 um_per_pixel = 0.117
 scaling_factor = 1
@@ -36,52 +42,6 @@ xpixels_ONI = 418
 ypixels_ONI = 674
 xedges = np.arange((xpixels_ONI + 1) * scaling_factor)
 yedges = np.arange((ypixels_ONI + 1) * scaling_factor)
-
-
-def spots2PAINT(df):
-    # This function reconstruct PAINT from the whole dataframe, assuming it covers the full FOV. Therefore, it's not for individual condensates
-    # single-frame spots
-    df_single_frame_spots = df[df["trackID"].isna()]
-    img_spots, _, _ = np.histogram2d(
-        x=df_single_frame_spots["x"].to_numpy(float) * scaling_factor,
-        y=df_single_frame_spots["y"].to_numpy(float) * scaling_factor,
-        bins=(xedges, yedges),
-    )
-
-    lst_tracklength = []
-    # tracks
-    df_tracks = df[df["trackID"].notna()]
-    all_trackID = df_tracks["trackID"].unique()
-    lst_of_arr_x = []
-    lst_of_arr_y = []
-    for trackID in track(all_trackID, description="Reconstruction: PAINT"):
-        df_current = df_tracks[df_tracks["trackID"] == trackID]
-        lst_tracklength.append(df_current.shape[0])
-        # for short tracks, treat as spots
-        if df_current.shape[0] <= tracklength_threshold:
-            lst_of_arr_x.append(df_current["x"].to_numpy(float) * scaling_factor)
-            lst_of_arr_y.append(df_current["y"].to_numpy(float) * scaling_factor)
-            continue
-        # for long tracks, randomly pick tracklength_threshold number of spots
-        else:
-            chosen_idx = np.random.choice(df_current.shape[0], tracklength_threshold)
-            lst_of_arr_x.append(
-                df_current.iloc[chosen_idx]["x"].to_numpy(float) * scaling_factor
-            )
-            lst_of_arr_y.append(
-                df_current.iloc[chosen_idx]["y"].to_numpy(float) * scaling_factor
-            )
-            continue
-
-    img_tracks, _, _ = np.histogram2d(
-        x=np.hstack(lst_of_arr_x),
-        y=np.hstack(lst_of_arr_y),
-        bins=(xedges, yedges),
-    )
-
-    img_PAINT = img_spots + img_tracks
-
-    return img_PAINT
 
 
 def cnt2box(cnt):
@@ -234,14 +194,11 @@ def cnt2mask(imgshape, contours):
     return mask
 
 
-for fname_singlechannel in lst_fname:
-    print("Now processing:", fname_singlechannel.split("-spot")[0])
+for fname_csv in lst_fname_csv:
+    print("Now processing:", fname_csv.split("-spot")[0])
     ## Reconstruct PAINT image
-    df_singlechannel = pd.read_csv(fname_singlechannel)
-    img_PAINT_singlechannel = spots2PAINT(df_singlechannel)
-    imwrite(
-        fname_singlechannel.split("-spot")[0] + "-PAINT.tif", img_PAINT_singlechannel
-    )
+    df_singlechannel = pd.read_csv(fname_csv)
+    img_PAINT_singlechannel = imread(fname_csv.split("-spot")[0] + "-PAINT.tif")
 
     ## Split to individual condensates
     img_denoise = gaussian_filter(img_PAINT_singlechannel, sigma=1)
@@ -291,34 +248,29 @@ for fname_singlechannel in lst_fname:
 
         ## save csv within box, img_PAINT, img_stepsize, and a plot with img_PAINT+cnt+tracks
         fname_save_prefix = (
-            fname_singlechannel.split("-spot")[0]
-            + "-threshold-"
-            + str(tracklength_threshold)
+            fname_csv.split("-spot")[0]
             + "-condensateID-"
             + str(condensateID)
             + "-"
+            + channel_postfix
         )
-        df_singlechannel_inbox.to_csv(
-            fname_save_prefix + "singlechannel.csv", index=False
-        )
+        df_singlechannel_inbox.to_csv(fname_save_prefix + ".csv", index=False)
+        imwrite(fname_save_prefix + "-PAINT.tif", img_PAINT_singlechannel_inbox)
         imwrite(
-            fname_save_prefix + "singlechannel-PAINT.tif", img_PAINT_singlechannel_inbox
-        )
-        imwrite(
-            fname_save_prefix + "singlechannel-stepsize.tif",
+            fname_save_prefix + "-stepsize.tif",
             img_stepsize_singlechannel_smoothed,
         )
-        pickle.dump(cnt_centered, open(fname_save_prefix + "cnt_centered.p", "wb"))
-        # plt_cnt_tracks_individual(
-        #     img_PAINT_singlechannel_inbox,
-        #     cnt,
-        #     df_singlechannel_inbox,
-        #     0,
-        #     20,
-        #     box_x_range,
-        #     box_y_range,
-        #     "Blues",
-        #     fname_save_prefix + "singlechannel-PAINT_cnt_tracks.png",
-        # )
+        pickle.dump(cnt_centered, open(fname_save_prefix + "-cnt_centered.p", "wb"))
+        plt_cnt_tracks_individual(
+            img_PAINT_singlechannel_inbox,
+            cnt,
+            df_singlechannel_inbox,
+            0,
+            20,
+            box_x_range,
+            box_y_range,
+            "Blues",
+            fname_save_prefix + "-PAINT_cnt_tracks.png",
+        )
 
         condensateID += 1
