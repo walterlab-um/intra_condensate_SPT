@@ -18,6 +18,7 @@ folder_save = dirname(lst_path[0])
 os.chdir(folder_save)
 lst_fname = [basename(f) for f in lst_path if f.endswith("spots_reformatted.csv")]
 
+time_cutoff = 200  # remove the first 200 frames of tracking
 tracklength_threshold = 10  # distinguish long versus short tracks
 condensate_area_threshold = 200  # pixels
 box_padding = 3  # pixels padding arround each condensate contour
@@ -82,6 +83,7 @@ for fname_singlechannel in lst_fname:
     print("Now processing:", fname_singlechannel.split("-spot")[0])
     ## Reconstruct PAINT image
     df_singlechannel = pd.read_csv(fname_singlechannel)
+    df_singlechannel = df_singlechannel[df_singlechannel["t"] >= time_cutoff]
     img_PAINT_singlechannel = spots2PAINT(df_singlechannel)
     imwrite(
         fname_singlechannel.split("-spot")[0] + "-PAINT.tif", img_PAINT_singlechannel
