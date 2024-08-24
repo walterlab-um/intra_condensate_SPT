@@ -88,5 +88,5 @@ for fname_singlechannel in lst_fname:
     imwrite(
         fname_singlechannel.split("-spot")[0] + "-PAINT.tif", img_PAINT_singlechannel
     )
-    img_denoise = gaussian_filter(img_PAINT_singlechannel, sigma=1)
-    imwrite(fname_singlechannel.split("-spot")[0] + "-PAINT-smoothed.tif", img_denoise)
+    # img_denoise = gaussian_filter(img_PAINT_singlechannel, sigma=1)
+    # imwrite(fname_singlechannel.split("-spot")[0] + "-PAINT-smoothed.tif", img_denoise)
