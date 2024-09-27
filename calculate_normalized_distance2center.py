@@ -16,7 +16,7 @@ pd.options.mode.chained_assignment = None  # default='warn'
 
 
 """
-The program calculates per-location FUS and RNA normalized distance to center distribution of two channel single partical tracking (SPT) data.
+The program calculates per-location normalized distance to center distribution of two channel single partical tracking (SPT) data.
 """
 
 
@@ -122,17 +122,12 @@ def filter_perTrack(df):
 # Function to process a single file
 def process_file(
     i,
-    lst_fname_left_csv,
-    lst_fname_right_csv,
-    lst_fname_left_PAINT,
-    lst_fname_right_PAINT,
+    lst_fname_csv,
+    lst_fname_PAINT,
 ):
-    df_left = pd.read_csv(lst_fname_left_csv[i])
-    df_right = pd.read_csv(lst_fname_right_csv[i])
-    img_PAINT_left = imread(lst_fname_left_PAINT[i])
-    img_PAINT_right = imread(lst_fname_right_PAINT[i])
+    df_import = pd.read_csv(lst_fname_csv[i])
+    img = imread(lst_fname_PAINT[i])
 
-    img = img_PAINT_left + img_PAINT_right
     edges = img >= 1
     contours, _ = cv2.findContours(edges * 1, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
     mask = cnt2mask(edges.shape, contours)
@@ -148,37 +143,23 @@ def process_file(
     center_xy = (mask.centroid.x, mask.centroid.y)
     mask_r = math.sqrt(mask.area / math.pi)
 
-    df_left = filter_perTrack(df_left)
-    d2center = np.sqrt(
-        (df_left["x"] - center_xy[0]) ** 2 + (df_left["y"] - center_xy[1]) ** 2
-    )
-    condensate_r = np.repeat(mask_r, df_left.shape[0])
+    df = filter_perTrack(df_import)
+    d2center = np.sqrt((df["x"] - center_xy[0]) ** 2 + (df["y"] - center_xy[1]) ** 2)
+    condensate_r = np.repeat(mask_r, df.shape[0])
     d2center_norm = d2center / condensate_r
-    df_left["d2center"] = d2center
-    df_left["condensate_r"] = condensate_r
-    df_left["d2center_norm"] = d2center_norm
-
-    df_right = filter_perTrack(df_right)
-    d2center = np.sqrt(
-        (df_right["x"] - center_xy[0]) ** 2 + (df_right["y"] - center_xy[1]) ** 2
-    )
-    condensate_r = np.repeat(mask_r, df_right.shape[0])
-    d2center_norm = d2center / condensate_r
-    df_right["d2center"] = d2center
-    df_right["condensate_r"] = condensate_r
-    df_right["d2center_norm"] = d2center_norm
+    df["d2center"] = d2center
+    df["condensate_r"] = condensate_r
+    df["d2center_norm"] = d2center_norm
 
     return (
-        df_left.shape[0],
-        df_right.shape[0],
-        df_left,  # save all FUS tracks (x, y, r, d2center, condensate_r, d2center_norm)
-        df_right,  # save all FUS tracks (x, y, r, d2center, condensate_r, d2center_norm)
+        df.shape[0],
+        df,  # save all tracks (x, y, r, d2center, condensate_r, d2center_norm)
     )
 
 
 def main():
     print(
-        "Choose all tif and csv files to be batch proccessed. The prefix should be the same for (1) left.csv (2) right.csv (3) left-PAINT.tif (4) right-PAINT.tif"
+        "Choose all tif and csv files to be batch proccessed. The prefix should be the same for (1) .csv (2) -PAINT.tif"
     )
     lst_files = list(fd.askopenfilenames())
     folder_data = dirname(lst_files[0])
@@ -187,18 +168,10 @@ def main():
     fname_save = "distance2center-DataDict-pooled-perTrack.p"
 
     all_files = os.listdir(".")
-    lst_fname_left_csv = [f for f in all_files if f.endswith("left.csv")]
-    lst_fname_left_PAINT = [
-        f.split("left.csv")[0] + "left-PAINT.tif" for f in lst_fname_left_csv
-    ]
-    lst_fname_right_csv = [
-        f.split("left.csv")[0] + "right.csv" for f in lst_fname_left_csv
-    ]
-    lst_fname_right_PAINT = [
-        f.split("left.csv")[0] + "right-PAINT.tif" for f in lst_fname_left_csv
-    ]
+    lst_fname_csv = [f for f in all_files if f.endswith(".csv")]
+    lst_fname_PAINT = [f.split(".csv")[0] + "-PAINT.tif" for f in lst_fname_csv]
     # The tqdm library provides an easy way to visualize the progress of loops.
-    pbar = tqdm(total=len(lst_fname_left_csv))
+    pbar = tqdm(total=len(lst_fname_csv))
 
     # Update function for the progress bar
     def update(*a):
@@ -207,15 +180,13 @@ def main():
     # Create a process pool and map the function to the files
     with Pool(cpu_count()) as p:
         results = []
-        for i in range(len(lst_fname_left_csv)):
+        for i in range(len(lst_fname_csv)):
             result = p.apply_async(
                 process_file,
                 args=(
                     i,
-                    lst_fname_left_csv,
-                    lst_fname_right_csv,
-                    lst_fname_left_PAINT,
-                    lst_fname_right_PAINT,
+                    lst_fname_csv,
+                    lst_fname_PAINT,
                 ),
                 callback=update,
             )
@@ -227,19 +198,14 @@ def main():
 
     # Unpack results into separate lists
     (
-        lst_size_FUS,
-        lst_size_RNA,
-        lst_df_left,
-        lst_df_right,
+        lst_size,
+        lst_df,
     ) = map(list, zip(*results))
 
     dict_to_save = {
-        "filenames_FUS": lst_fname_left_csv,
-        "filenames_RNA": lst_fname_right_csv,
-        "lst_N_locations_FUS": lst_size_FUS,
-        "lst_N_locations_RNA": lst_size_RNA,
-        "lst_df_FUS_d2center": lst_df_left,  # save all FUS tracks (x, y, r, d2center, condensate_r, d2center_norm)
-        "lst_df_RNA_d2center": lst_df_right,  # save all FUS tracks (x, y, r, d2center, condensate_r, d2center_norm)
+        "filenames": lst_fname_csv,
+        "lst_N_locations": lst_size,
+        "lst_df_d2center": lst_df,  # save all tracks (x, y, r, d2center, condensate_r, d2center_norm)
     }
     pickle.dump(
         dict_to_save,
