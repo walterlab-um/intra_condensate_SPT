@@ -166,7 +166,6 @@ def main():
     lst_files = list(fd.askopenfilenames())
     folder_data = dirname(lst_files[0])
     os.chdir(folder_data)
-    folder_save = "../"
     fname_save = "distance2center-DataDict-pooled-perTrack.p"
 
     all_files = os.listdir(".")
@@ -211,10 +210,10 @@ def main():
     }
     pickle.dump(
         dict_to_save,
-        open(join(folder_save, fname_save), "wb"),
+        open(join(folder_data, fname_save), "wb"),
     )
     print("Saved successfully at the following path:")
-    print(join(folder_save, fname_save))
+    print(join(folder_data, fname_save))
 
 
 if __name__ == "__main__":
