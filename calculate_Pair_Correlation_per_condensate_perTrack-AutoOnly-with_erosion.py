@@ -261,7 +261,7 @@ def main():
     lst_files = list(fd.askopenfilenames())
     folder_data = dirname(lst_files[0])
     os.chdir(folder_data)
-    fname_save = "PairCorr-DataDict-pooled-perTrack.p"
+    fname_save = "PairCorr-erode5-DataDict-pooled-perTrack.p"
 
     # Parameters
     nm_per_pxl = 117  # ONI scale
