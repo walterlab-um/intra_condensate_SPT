@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import pandas as pd
 from shapely.geometry import Point, Polygon
+from scipy.ndimage import gaussian_filter
 from tifffile import imread
 from tqdm import tqdm
 
@@ -128,7 +129,8 @@ def process_file(
     df_import = pd.read_csv(lst_fname_csv[i])
     img = imread(lst_fname_PAINT[i])
 
-    edges = img >= 1
+    img_denoise = gaussian_filter(img, sigma=1)
+    edges = img_denoise >= 3
     contours, _ = cv2.findContours(edges * 1, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
     mask = cnt2mask(edges.shape, contours)
     contours_final, _ = cv2.findContours(mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
