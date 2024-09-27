@@ -124,20 +124,22 @@ def filter_perTrack(df):
 
 
 def PairCorr_with_edge_correction(
-    df_ref, df_interest, mask, nm_per_pxl, r_max_nm, ringwidth_nm, dr_slidingrings_nm
+    df_ref,
+    mask,
+    nm_per_pxl,
+    r_max_nm,
+    ringwidth_nm,
+    dr_slidingrings_nm,
 ):
     # only count particles within mask
     x_ref, y_ref = corr_within_mask(df_ref, mask)
-    x_interest, y_interest = corr_within_mask(df_interest, mask)
 
     # Total number particles in mask
     N_ref = x_ref.shape[0]
-    N_interest = x_interest.shape[0]
 
     # particle density rho, unit: number per nano meter square
     mask_area_nm2 = mask.area * (nm_per_pxl**2)
     rho_ref_per_nm2 = N_ref / mask_area_nm2
-    rho_interest_per_nm2 = N_interest / mask_area_nm2
 
     # setup bins and ring areas
     bin_starts = np.arange(0, r_max_nm - ringwidth_nm, dr_slidingrings_nm)
