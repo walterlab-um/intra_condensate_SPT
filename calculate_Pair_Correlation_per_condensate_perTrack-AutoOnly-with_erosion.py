@@ -123,7 +123,7 @@ def filter_perTrack(df):
     return df_out
 
 
-def erode_polygon(polygon, erosion_distance=5):
+def erode_polygon(polygon, erosion_distance=7):
     """
     Erodes the given shapely Polygon by a specified distance.
 
@@ -261,7 +261,7 @@ def main():
     lst_files = list(fd.askopenfilenames())
     folder_data = dirname(lst_files[0])
     os.chdir(folder_data)
-    fname_save = "PairCorr-erode5-DataDict-pooled-perTrack.p"
+    fname_save = "PairCorr-erode7-DataDict-pooled-perTrack.p"
 
     # Parameters
     nm_per_pxl = 117  # ONI scale
