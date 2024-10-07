@@ -188,19 +188,18 @@ def PairCorr_with_edge_correction(
 # Function to process a single file
 def process_file(
     i,
-    lst_fname_left_csv,
-    lst_fname_left_PAINT,
+    lst_fname_csv,
+    lst_fname_PAINT,
     nm_per_pxl,
     r_max_nm,
     ringwidth_nm,
     dr_slidingrings_nm,
 ):
-    df_left = pd.read_csv(lst_fname_left_csv[i])
-    img_PAINT_left = imread(lst_fname_left_PAINT[i])
+    df_import = pd.read_csv(lst_fname_csv[i])
+    img_PAINT = imread(lst_fname_PAINT[i])
 
-    img_denoise = gaussian_filter(img_PAINT_left, sigma=1)
-    edges = img_denoise >= 10
-    # edges = (img_PAINT_left > 5) & (img_PAINT_right > 5)
+    img_denoise = gaussian_filter(img_PAINT, sigma=1)
+    edges = img_denoise >= 3
     contours, _ = cv2.findContours(edges * 1, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
     mask = cnt2mask(edges.shape, contours)
     contours_final, _ = cv2.findContours(mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
@@ -213,10 +212,10 @@ def process_file(
 
     mask = Polygon(np.squeeze(cnt_condensate))
 
-    df_left = filter_perLoc(df_left)
+    df = filter_perLoc(df_import)
 
-    auto_FUS = PairCorr_with_edge_correction(
-        df_left,
+    auto_PCF = PairCorr_with_edge_correction(
+        df,
         mask,
         nm_per_pxl,
         r_max_nm,
@@ -225,8 +224,8 @@ def process_file(
     )
 
     return (
-        auto_FUS,
-        df_left.shape[0],
+        auto_PCF,
+        df.shape[0],
     )
 
 
@@ -237,7 +236,6 @@ def main():
     lst_files = list(fd.askopenfilenames())
     folder_data = dirname(lst_files[0])
     os.chdir(folder_data)
-    folder_save = "../"
     fname_save = "PairCorr-DataDict-pooled-perLoc.p"
 
     # Parameters
@@ -250,12 +248,11 @@ def main():
     )  # overlaping bins (sliding window)
 
     all_files = os.listdir(".")
-    lst_fname_left_csv = [f for f in all_files if f.endswith(".csv")]
-    lst_fname_left_PAINT = [
-        f.split(".csv")[0] + "-PAINT.tif" for f in lst_fname_left_csv
-    ]
+    lst_fname_csv = [f for f in all_files if f.endswith(".csv")]
+    lst_fname_PAINT = [f.split(".csv")[0] + "-PAINT.tif" for f in lst_fname_csv]
+
     # The tqdm library provides an easy way to visualize the progress of loops.
-    pbar = tqdm(total=len(lst_fname_left_csv))
+    pbar = tqdm(total=len(lst_fname_csv))
 
     # Update function for the progress bar
     def update(*a):
@@ -264,13 +261,13 @@ def main():
     # Create a process pool and map the function to the files
     with Pool(cpu_count()) as p:
         results = []
-        for i in range(len(lst_fname_left_csv)):
+        for i in range(len(lst_fname_csv)):
             result = p.apply_async(
                 process_file,
                 args=(
                     i,
-                    lst_fname_left_csv,
-                    lst_fname_left_PAINT,
+                    lst_fname_csv,
+                    lst_fname_PAINT,
                     nm_per_pxl,
                     r_max_nm,
                     ringwidth_nm,
@@ -286,14 +283,14 @@ def main():
 
     # Unpack results into separate lists
     (
-        lst_autoFUS,
-        lst_size_FUS,
+        lst_auto_PCF,
+        lst_size,
     ) = map(list, zip(*results))
 
     dict_to_save = {
-        "filenames_FUS": lst_fname_left_csv,
-        "lst_N_locations_FUS": lst_size_FUS,
-        "lst_auto_PCF_FUS": lst_autoFUS,
+        "filenames": lst_fname_csv,
+        "lst_N_locations": lst_size,
+        "lst_auto_PCF": lst_auto_PCF,
         "nm_per_pxl": nm_per_pxl,
         "r_max_nm": r_max_nm,
         "ringwidth_nm": ringwidth_nm,
@@ -302,10 +299,10 @@ def main():
     }
     pickle.dump(
         dict_to_save,
-        open(join(folder_save, fname_save), "wb"),
+        open(join(folder_data, fname_save), "wb"),
     )
     print("Saved successfully at the following path:")
-    print(join(folder_save, fname_save))
+    print(join(folder_data, fname_save))
 
 
 if __name__ == "__main__":
