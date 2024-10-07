@@ -217,6 +217,9 @@ def process_file(
     mask = Polygon(np.squeeze(cnt_condensate))
     mask = erode_polygon(mask)
 
+    if mask.area < 10:
+        return (np.nan, np.nan)
+
     df = filter_perLoc(df_import)
 
     auto = PairCorr_with_edge_correction(
