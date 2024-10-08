@@ -145,7 +145,8 @@ def process_file(
     center_xy = (mask.centroid.x, mask.centroid.y)
     mask_r = math.sqrt(mask.area / math.pi)
 
-    df = filter_perTrack(df_import)
+    # df = filter_perTrack(df_import)
+    df = filter_perLoc(df_import)
     d2center = np.sqrt((df["x"] - center_xy[0]) ** 2 + (df["y"] - center_xy[1]) ** 2)
     condensate_r = np.repeat(mask_r, df.shape[0])
     d2center_norm = d2center / condensate_r
@@ -166,7 +167,8 @@ def main():
     lst_files = list(fd.askopenfilenames())
     folder_data = dirname(lst_files[0])
     os.chdir(folder_data)
-    fname_save = "distance2center-DataDict-pooled-perTrack.p"
+    # fname_save = "distance2center-DataDict-pooled-perTrack.p"
+    fname_save = "distance2center-DataDict-pooled-perLoc.p"
 
     all_files = os.listdir(".")
     lst_fname_csv = [f for f in all_files if f.endswith(".csv")]
