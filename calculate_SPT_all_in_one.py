@@ -72,8 +72,8 @@ def calc_MSD_NonPhysUnit(df_track, lags):
     if len(missing_t) > 0:
         for t in missing_t:
             complete_t = np.append(df_track_sorted.t, np.array(missing_t, dtype=int))
-            complete_x = np.append(df_track_sorted.x, np.repeat(np.NaN, len(missing_t)))
-            complete_y = np.append(df_track_sorted.y, np.repeat(np.NaN, len(missing_t)))
+            complete_x = np.append(df_track_sorted.x, np.repeat(np.nan, len(missing_t)))
+            complete_y = np.append(df_track_sorted.y, np.repeat(np.nan, len(missing_t)))
             df_complete = pd.DataFrame()
             df_complete["x"] = complete_x
             df_complete["y"] = complete_y
@@ -189,11 +189,11 @@ for fpath in track(lst_fpath):
             if intercept_linear >= 0:
                 sigma_phys = np.sqrt(intercept_linear / 4) * 1000  # nm
             else:
-                sigma_phys = np.NaN
+                sigma_phys = np.nan
         else:
-            D_phys_linear = np.NaN
-            log10D_linear = np.NaN
-            sigma_phys = np.NaN
+            D_phys_linear = np.nan
+            log10D_linear = np.nan
+            sigma_phys = np.nan
 
         # MSD = 2 n D tau^alpha = 4 D tau^alpha
         # log(MSD) = alpha * log(tau) + log(D) + log(4)
